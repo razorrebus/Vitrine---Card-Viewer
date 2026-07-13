@@ -1,0 +1,28 @@
+{
+  "app": "vitrine",
+  "version": 1,
+  "cards": [
+    {
+      "id": "card-original-card",
+      "cardName": "Original Card",
+      "year": "",
+      "cardNumber": "",
+      "series": "",
+      "cardSet": "",
+      "brand": "",
+      "type": "",
+      "team": "",
+      "category": "",
+      "position": "",
+      "rookie": false,
+      "additional": "",
+      "coating": "matte",
+      "pattern": "crackle",
+      "foilOpacity": 0.85,
+      "bezel": 16,
+      "front": "original-card.png",
+      "back": null,
+      "mask": null
+    }
+  ]
+}

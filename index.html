@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Vitrine — 3D Card Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b0d10;
+    --panel: #14171c;
+    --panel-2: #1a1e24;
+    --recess: #05070a;
+    --hairline: #2a2f37;
+    --ivory: #ede7da;
+    --ivory-dim: #a7a294;
+    --gold: #c9a24b;
+    --gold-soft: rgba(201,162,75,0.35);
+    --teal: #1e6f6f;
+    --teal-bright: #2f9e9e;
+    --card-w: 300px;
+    --card-h: 420px;
+    --bezel: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg);
+    color: var(--ivory);
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+
+  .eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  h1.title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: 22px;
+    margin: 4px 0 0 0;
+    color: var(--ivory);
+    letter-spacing: 0.01em;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    min-height: 100vh;
+  }
+
+  @media (max-width: 880px) {
+    .app { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- VITRINE (viewer side) ---------- */
+  .vitrine-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px 32px;
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(47,158,158,0.08), transparent 60%),
+      var(--bg);
+    border-right: 1px solid var(--hairline);
+  }
+  @media (max-width: 880px) { .vitrine-wrap { border-right: none; border-bottom: 1px solid var(--hairline); padding-top: 28px; } }
+
+  .vitrine-header { text-align: center; margin-bottom: 28px; }
+
+  .stage-frame {
+    position: relative;
+    padding: 46px 60px 34px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, var(--panel-2), var(--recess) 70%);
+    box-shadow:
+      0 0 0 1px var(--hairline),
+      0 40px 80px -30px rgba(0,0,0,0.8),
+      inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .spotlight {
+    position: absolute;
+    top: -1px; left: 50%;
+    transform: translateX(-50%);
+    width: 70%; height: 140px;
+    background: radial-gradient(ellipse at top, rgba(255,247,220,0.10), transparent 75%);
+    pointer-events: none;
+  }
+
+  .card-stage {
+    width: var(--card-w);
+    height: var(--card-h);
+    perspective: 1400px;
+    touch-action: none;
+    cursor: grab;
+    position: relative;
+  }
+  .card-stage:active { cursor: grabbing; }
+
+  .card-3d {
+    width: 100%; height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 120ms ease-out;
+    will-change: transform;
+  }
+  .card-3d.dragging { transition: none; }
+
+  .card-face {
+    position: absolute; inset: 0;
+    border-radius: var(--bezel);
+    overflow: hidden;
+    box-shadow:
+      0 2px 3px rgba(0,0,0,0.4),
+      0 24px 48px -18px rgba(0,0,0,0.75),
+      0 0 0 1px rgba(255,255,255,0.06);
+    background: #23262b;
+  }
+  .card-face.back { transform: rotateY(180deg); }
+
+  .card-art {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    user-select: none; -webkit-user-drag: none;
+  }
+
+  .card-placeholder {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 10px;
+    color: var(--ivory-dim);
+    font-size: 12.5px;
+    text-align: center;
+    padding: 30px;
+    background: repeating-linear-gradient(135deg, #1c2027, #1c2027 10px, #1a1d23 10px, #1a1d23 20px);
+  }
+  .card-placeholder svg { opacity: 0.35; width: 34px; height: 34px; }
+
+  .foil-layer {
+    position: absolute; inset: 0;
+    mix-blend-mode: color-dodge;
+    opacity: 0.85;
+    pointer-events: none;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+    -webkit-mask-position: center; mask-position: center;
+  }
+
+  .shine-layer {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    opacity: 0.9;
+  }
+
+  .card-edge-glow {
+    position: absolute; inset: 0;
+    border-radius: var(--bezel);
+    pointer-events: none;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+
+  .rookie-badge {
+    display: inline-block; margin-left: 8px; vertical-align: middle;
+    font-family: 'Inter', sans-serif; font-style: normal; font-weight: 700;
+    font-size: 9px; letter-spacing: 0.08em;
+    color: #0b0d10; background: var(--gold);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  .back-note {
+    font-size: 10px; line-height: 1.45; color: var(--ivory-dim);
+    margin-top: 12px; white-space: pre-wrap; word-break: break-word;
+  }
+
+  /* Stat tables (shared by the card back + the viewer detail panel) */
+  .stat-block { margin-top: 10px; }
+  .stat-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); font-weight: 700; margin-bottom: 3px; }
+  .stat-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .stat-table th { font-size: 7.5px; font-weight: 700; color: var(--ivory-dim); text-transform: uppercase; padding: 2px 2px; text-align: right; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
+  .stat-table td { font-size: 8.5px; color: var(--ivory); padding: 1.5px 2px; text-align: right; white-space: nowrap; }
+  .stat-table th:first-child, .stat-table td:first-child,
+  .stat-table th:nth-child(2), .stat-table td:nth-child(2) { text-align: left; }
+  .back-stats .stat-block { margin-top: 8px; }
+
+  /* Generated back panel */
+  .back-generated {
+    position: absolute; inset: 0;
+    background: linear-gradient(160deg, #171a20, #0e1013 65%);
+    padding: 20px;
+    display: flex; flex-direction: column;
+    font-family: 'Inter', sans-serif;
+  }
+  .back-generated .brand-row {
+    display:flex; justify-content: space-between; align-items:center;
+    border-bottom: 1px solid var(--hairline); padding-bottom: 10px; margin-bottom: 12px;
+  }
+  .back-generated .brand { font-size: 10px; letter-spacing:0.14em; text-transform:uppercase; color: var(--gold); font-weight:700; }
+  .back-generated .yearnum { font-size: 10px; color: var(--ivory-dim); letter-spacing:0.06em; }
+  .back-generated .name-lockup { font-family:'Playfair Display', serif; font-style:italic; font-weight:700; font-size:19px; margin-bottom:2px; }
+  .back-generated .team-line { font-size:11.5px; color: var(--teal-bright); font-weight:600; letter-spacing:0.03em; margin-bottom:14px; }
+  .back-generated .meta-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 4px; }
+  .back-generated .meta-item .k { font-size:9.5px; text-transform:uppercase; letter-spacing:0.1em; color: var(--ivory-dim); margin-bottom:2px; }
+  .back-generated .meta-item .v { font-size:13px; color: var(--ivory); font-weight:600; }
+  .back-generated .footer-strip { margin-top:auto; display:flex; align-items:center; gap:8px; opacity:0.5; }
+  .back-generated .dot { width:5px; height:5px; border-radius:50%; background: var(--gold); }
+  .back-generated .footer-strip span { font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color: var(--ivory-dim); }
+
+  .controls-row {
+    display: flex; gap: 10px; margin-top: 26px; align-items: center;
+  }
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
+    color: var(--ivory);
+    background: var(--panel-2);
+    border: 1px solid var(--hairline);
+    padding: 9px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 7px;
+    transition: border-color 120ms, color 120ms;
+  }
+  .btn:hover { border-color: var(--gold-soft); color: var(--gold); }
+  .btn.subtle { background: transparent; color: var(--ivory-dim); border-color: transparent; }
+  .btn.subtle:hover { color: var(--ivory); }
+  .btn svg { width: 13px; height: 13px; }
+
+  .hint {
+    font-size: 11px; color: var(--ivory-dim); margin-top: 14px; text-align: center; max-width: 340px;
+    line-height: 1.5;
+  }
+
+  /* ---------- SIDEBAR (controls) ---------- */
+  .sidebar {
+    padding: 40px 34px 60px;
+    background: var(--panel);
+  }
+  .side-section { margin-bottom: 30px; }
+  .side-section:last-child { margin-bottom: 0; }
+  .side-section-head {
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--hairline);
+  }
+  .side-section-head .eyebrow { margin: 0; }
+  .side-section-head .count { font-size: 10px; color: var(--ivory-dim); }
+
+  .upload-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .upload-slot {
+    border: 1px dashed var(--hairline);
+    border-radius: 4px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 120ms, background 120ms;
+    position: relative;
+  }
+  .upload-slot:hover { border-color: var(--gold-soft); background: rgba(201,162,75,0.03); }
+  .upload-slot.filled { border-style: solid; border-color: var(--teal); }
+  .upload-slot input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .upload-slot .label { font-size: 11px; font-weight: 600; color: var(--ivory); margin-bottom: 2px; }
+  .upload-slot .sub { font-size: 9.5px; color: var(--ivory-dim); }
+  .upload-slot .thumb { width: 100%; height: 46px; object-fit: cover; border-radius: 2px; margin-bottom: 6px; opacity: 0.9; }
+
+  .sub-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--ivory-dim); font-weight: 600; margin: 4px 0 8px;
+  }
+  .coating-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;
+  }
+  .style-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .pattern-grid.disabled { opacity: 0.35; pointer-events: none; filter: grayscale(0.6); }
+  .style-swatch {
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    padding: 10px 6px 8px;
+    cursor: pointer;
+    text-align: center;
+    background: var(--panel-2);
+    transition: border-color 120ms, transform 120ms;
+  }
+  .style-swatch:hover { transform: translateY(-1px); }
+  .style-swatch.active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold-soft); }
+  .style-swatch .chip {
+    height: 30px; border-radius: 3px; margin-bottom: 7px;
+  }
+  .style-swatch .name { font-size: 10px; font-weight: 600; letter-spacing: 0.02em; }
+
+  .field { margin-bottom: 12px; }
+  .field label {
+    display:block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--ivory-dim); margin-bottom: 5px; font-weight: 600;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--hairline);
+    color: var(--ivory);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 9px 10px;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 120ms;
+  }
+  .field textarea { resize: vertical; min-height: 40px; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold-soft); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .opacity-row { display:flex; align-items:center; gap: 10px; margin-top: 12px; }
+  .opacity-row label { font-size: 10px; text-transform:uppercase; letter-spacing:0.09em; color: var(--ivory-dim); font-weight:600; white-space:nowrap; }
+  .opacity-row input[type="range"] { flex: 1; accent-color: var(--gold); }
+
+  .toggle-row { display:flex; align-items:center; justify-content:space-between; padding: 8px 0; }
+  .toggle-row .lbl { font-size: 12px; color: var(--ivory); }
+  .toggle-row .sub { font-size: 10.5px; color: var(--ivory-dim); margin-top: 1px; }
+  .switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider-track {
+    position:absolute; inset:0; background: var(--hairline); border-radius: 20px; cursor:pointer; transition: background 150ms;
+  }
+  .slider-track::before {
+    content:""; position:absolute; width:16px; height:16px; left:2px; top:2px; background: var(--ivory-dim);
+    border-radius:50%; transition: transform 150ms, background 150ms;
+  }
+  .switch input:checked + .slider-track { background: var(--teal); }
+  .switch input:checked + .slider-track::before { transform: translateX(16px); background: var(--ivory); }
+
+  /* ---------- TOP BAR ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 18px;
+    background: rgba(11,13,16,0.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .topbar .brand-lockup { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+  .topbar .brand-name {
+    font-family: 'Playfair Display', serif; font-style: italic; font-weight: 700;
+    font-size: 18px; color: var(--ivory);
+  }
+  .topbar .brand-sub { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ivory-dim); white-space: nowrap; }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .tb-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 600;
+    color: var(--ivory); background: var(--panel-2);
+    border: 1px solid var(--hairline); border-radius: 8px;
+    padding: 8px 12px; cursor: pointer; transition: border-color 120ms, background 120ms;
+    white-space: nowrap;
+  }
+  .tb-btn:hover { border-color: var(--gold-soft); }
+  .tb-btn svg { width: 15px; height: 15px; }
+  .tb-btn.primary { background: var(--teal); border-color: var(--teal-bright); }
+  .tb-btn.primary:hover { background: var(--teal-bright); }
+  .tb-btn input[type=file] { display: none; }
+
+  /* ---------- FILE:// WARNING ---------- */
+  .file-warning {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: rgba(224,115,111,0.1); border-bottom: 1px solid rgba(224,115,111,0.4);
+    color: var(--ivory); padding: 12px 18px; font-size: 13px; line-height: 1.5;
+  }
+  .file-warning svg { width: 20px; height: 20px; flex-shrink: 0; color: #e0736f; margin-top: 1px; }
+  .file-warning div { flex: 1; }
+  .file-warning code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+  .file-warning button {
+    background: none; border: none; color: var(--ivory-dim); font-size: 20px; line-height: 1;
+    cursor: pointer; padding: 0 2px; flex-shrink: 0;
+  }
+  .file-warning button:hover { color: var(--ivory); }
+
+  /* ---------- GALLERY ---------- */
+  .gallery-view { display: none; padding: 26px 22px 60px; max-width: 1200px; margin: 0 auto; }
+  body.gallery-open .app { display: none; }
+  body.gallery-open .gallery-view { display: block; }
+
+  .gallery-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+  .gallery-head h2 {
+    font-family: 'Playfair Display', serif; font-style: italic; font-weight: 700;
+    font-size: 26px; margin: 4px 0 0 0; color: var(--ivory);
+  }
+  .gallery-search {
+    background: var(--panel); border: 1px solid var(--hairline); border-radius: 8px;
+    color: var(--ivory); font-family: 'Inter'; font-size: 13px; padding: 9px 12px; min-width: 200px;
+  }
+  .gallery-search:focus { outline: none; border-color: var(--gold-soft); }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 18px;
+  }
+  .gcard {
+    position: relative; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--hairline); border-radius: 10px;
+    overflow: hidden; transition: transform 140ms ease, border-color 140ms, box-shadow 140ms;
+  }
+  .gcard:hover { transform: translateY(-4px); border-color: var(--gold-soft); box-shadow: 0 18px 40px -22px rgba(0,0,0,0.9); }
+  .gcard-thumb {
+    aspect-ratio: 5 / 7; width: 100%; display: block; object-fit: cover;
+    background: linear-gradient(180deg, var(--panel-2), var(--recess));
+  }
+  .gcard-thumb.placeholder { display: flex; align-items: center; justify-content: center; color: var(--ivory-dim); }
+  .gcard-thumb.placeholder svg { width: 34px; height: 34px; opacity: 0.5; }
+  .gcard-meta { padding: 9px 11px 11px; }
+  .gcard-name { font-size: 13px; font-weight: 600; color: var(--ivory); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gcard-sub { font-size: 11px; color: var(--ivory-dim); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gcard-del {
+    position: absolute; top: 7px; right: 7px; z-index: 2;
+    width: 26px; height: 26px; border-radius: 6px; border: none; cursor: pointer;
+    background: rgba(5,7,10,0.7); color: var(--ivory-dim);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 120ms, color 120ms, background 120ms;
+  }
+  .gcard:hover .gcard-del { opacity: 1; }
+  .gcard-del:hover { color: #ff6b6b; background: rgba(5,7,10,0.9); }
+  .gcard-del svg { width: 14px; height: 14px; }
+  .gallery-empty { text-align: center; color: var(--ivory-dim); padding: 70px 20px; }
+  .gallery-empty svg { width: 46px; height: 46px; opacity: 0.4; margin-bottom: 12px; }
+
+  /* toast */
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+    background: var(--panel-2); border: 1px solid var(--hairline); color: var(--ivory);
+    padding: 11px 18px; border-radius: 10px; font-size: 13px; font-weight: 500;
+    box-shadow: 0 20px 50px -20px rgba(0,0,0,0.9);
+    opacity: 0; pointer-events: none; transition: opacity 200ms, transform 200ms; z-index: 60;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---------- FLUID CARD + MOBILE ---------- */
+  .card-stage { width: var(--card-w); height: var(--card-h); }
+  @media (max-width: 560px) {
+    :root { --card-w: min(300px, 74vw); --card-h: calc(min(300px, 74vw) * 1.4); }
+    .stage-frame { padding: 30px 26px 22px; }
+    .topbar { padding: 9px 12px; }
+    .topbar .brand-sub { display: none; }
+    .tb-btn { padding: 7px 10px; font-size: 12px; }
+    .tb-btn .tb-label { display: none; }
+    .tb-btn svg { width: 16px; height: 16px; }
+    .vitrine-wrap { padding: 20px 12px 24px; }
+    .sidebar { padding: 18px 14px 40px; }
+    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+    .gcard-del { opacity: 1; }
+  }
+
+  /* ---------- FORM CONTROLS ---------- */
+  .field-hint { font-size: 9px; color: var(--teal-bright); letter-spacing: 0.08em; text-transform: uppercase; margin-left: 4px; }
+  .num-px { display: flex; align-items: center; gap: 4px; }
+  .num-px input[type="number"] { width: 58px; text-align: right; }
+  .num-px span { font-size: 11px; color: var(--ivory-dim); }
+  .num-with-btn { display: flex; gap: 6px; }
+  .num-with-btn input { flex: 1; }
+  .mini-btn {
+    font-family: 'Inter'; font-size: 11px; font-weight: 600; color: var(--ivory-dim);
+    background: var(--panel-2); border: 1px solid var(--hairline); border-radius: 3px;
+    padding: 0 10px; cursor: pointer; white-space: nowrap; transition: color 120ms, border-color 120ms;
+  }
+  .mini-btn:hover { color: var(--gold); border-color: var(--gold-soft); }
+  input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+  /* ---------- VIEWER MODE ---------- */
+  .detail-panel { display: none; padding: 44px 34px 60px; background: var(--panel); }
+  body.viewer-open .sidebar { display: none; }
+  body.viewer-open .detail-panel { display: block; }
+  body.viewer-open .app { grid-template-columns: 1.5fr 0.82fr; }
+  body.viewer-open #saveCardBtn, body.gallery-open #saveCardBtn { display: none; }
+  body.viewer-open .side-only, body.gallery-open .side-only { display: none; }
+
+  .dp-head { margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--hairline); }
+  .dp-title {
+    font-family: 'Playfair Display', serif; font-style: italic; font-weight: 700;
+    font-size: 27px; margin: 6px 0 4px; color: var(--ivory); line-height: 1.1;
+  }
+  .dp-sub { font-size: 13px; color: var(--teal-bright); font-weight: 600; letter-spacing: 0.02em; }
+  .dp-finish { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .dp-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600; color: var(--ivory-dim);
+    background: var(--panel-2); border: 1px solid var(--hairline);
+    padding: 5px 10px; border-radius: 20px;
+  }
+  .dp-chip .swatch { width: 11px; height: 11px; border-radius: 50%; }
+  .dp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: 8px; overflow: hidden; }
+  .dp-cell { background: var(--panel); padding: 12px 14px; }
+  .dp-cell .k { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ivory-dim); margin-bottom: 3px; }
+  .dp-cell .v { font-size: 14px; color: var(--ivory); font-weight: 600; }
+  .dp-stats { margin-top: 18px; }
+  .dp-stats .stat-block { margin-top: 14px; overflow-x: auto; }
+  .dp-stats .stat-title { font-size: 11px; margin-bottom: 5px; }
+  .dp-stats .stat-table th { font-size: 9.5px; padding: 4px 5px; }
+  .dp-stats .stat-table td { font-size: 12px; padding: 4px 5px; }
+  .dp-note { font-size: 12.5px; line-height: 1.5; color: var(--ivory-dim); margin-top: 16px; white-space: pre-wrap; word-break: break-word; }
+  .dp-actions { display: flex; gap: 10px; margin-top: 26px; }
+  .btn-solid, .btn-danger {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: 'Inter'; font-size: 13px; font-weight: 600; cursor: pointer;
+    padding: 11px 18px; border-radius: 8px; border: 1px solid transparent; transition: background 120ms, border-color 120ms;
+  }
+  .btn-solid svg, .btn-danger svg { width: 15px; height: 15px; }
+  .btn-solid { background: var(--teal); color: var(--ivory); border-color: var(--teal-bright); }
+  .btn-solid:hover { background: var(--teal-bright); }
+  .btn-danger { background: transparent; color: #e0736f; border-color: rgba(224,115,111,0.4); }
+  .btn-danger:hover { background: rgba(224,115,111,0.12); border-color: #e0736f; }
+
+  @media (max-width: 880px) {
+    .detail-panel { padding: 24px 18px 50px; }
+    body.viewer-open .app { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand-lockup">
+    <span class="brand-name">Vitrine</span>
+    <span class="brand-sub">Card Collection</span>
+  </div>
+  <div class="topbar-actions">
+    <button class="tb-btn" id="galleryBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="tb-label">Gallery</span>
+    </button>
+    <button class="tb-btn" id="newCardBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+      <span class="tb-label">New</span>
+    </button>
+    <button class="tb-btn primary" id="saveCardBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+      <span class="tb-label">Save</span>
+    </button>
+    <button class="tb-btn" id="exportBtn" title="Pack the whole collection into a cards.zip to commit to GitHub">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg>
+      <span class="tb-label">Pack</span>
+    </button>
+    <label class="tb-btn" id="importBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 8l5-5 5 5M12 3v12"/></svg>
+      <span class="tb-label">Import</span>
+      <input type="file" accept="application/json" id="importInput">
+    </label>
+  </div>
+</div>
+
+<div class="file-warning" id="fileWarning" style="display:none;">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  <div>
+    <strong>Cards folder isn't loading.</strong>
+    You opened this file directly, but browsers block that page (<code>file://</code>) from reading the <code>cards/</code> folder — so only cards saved in this browser show up, not the ones in the folder.
+    Double-click <strong>Start Vitrine.bat</strong> instead (in this same folder) to run it properly.
+  </div>
+  <button id="fileWarningClose" aria-label="Dismiss">&times;</button>
+</div>
+
+<div class="app">
+
+  <!-- VIEWER -->
+  <div class="vitrine-wrap">
+    <div class="vitrine-header">
+      <div class="eyebrow">Vitrine — Card Viewer</div>
+      <h1 class="title" id="cardTitleDisplay">Untitled Card</h1>
+    </div>
+
+    <div class="stage-frame">
+      <div class="spotlight"></div>
+      <div class="card-stage" id="cardStage">
+        <div class="card-3d" id="card3d">
+          <div class="card-face front" id="faceFront">
+            <div class="card-placeholder" id="frontPlaceholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>
+              <span>Upload a card face image<br>to begin</span>
+            </div>
+            <img class="card-art" id="frontImg" style="display:none;">
+            <div class="foil-layer no-mask" id="foilLayer"></div>
+            <div class="shine-layer" id="shineLayer"></div>
+            <div class="card-edge-glow"></div>
+          </div>
+          <div class="card-face back" id="faceBack">
+            <div class="back-generated" id="backGenerated">
+              <div class="brand-row">
+                <span class="brand" id="backBrand">BRAND</span>
+                <span class="yearnum" id="backYearNum">— · —</span>
+              </div>
+              <div class="name-lockup" id="backName">Card Name<span class="rookie-badge" id="backRookie" style="display:none;">RC</span></div>
+              <div class="team-line" id="backTeam">Team · Position</div>
+              <div class="meta-grid">
+                <div class="meta-item"><div class="k">Series</div><div class="v" id="backSeries">—</div></div>
+                <div class="meta-item"><div class="k">Card No.</div><div class="v" id="backCardNo">—</div></div>
+                <div class="meta-item"><div class="k">Set</div><div class="v" id="backSet">—</div></div>
+                <div class="meta-item"><div class="k">Type</div><div class="v" id="backType">—</div></div>
+                <div class="meta-item"><div class="k">Team</div><div class="v" id="backTeamCell">—</div></div>
+                <div class="meta-item"><div class="k">Category</div><div class="v" id="backCategory">—</div></div>
+              </div>
+              <div class="back-stats" id="backStats"></div>
+              <div class="back-note" id="backNote"></div>
+              <div class="footer-strip"><div class="dot"></div><span>Vitrine Collection</span></div>
+            </div>
+            <img class="card-art" id="backImg" style="display:none;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <button class="btn" id="flipBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 2l4 4-4 4"/><path d="M3 12v-2a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 12v2a4 4 0 0 1-4 4H3"/></svg>
+        Flip card
+      </button>
+      <button class="btn subtle" id="resetTiltBtn">Reset view</button>
+      <button class="btn subtle" id="gyroBtn" style="display:none;">Use motion tilt</button>
+    </div>
+    <div class="hint">Drag to rotate (turn off auto-return to hold any angle) · scroll or pinch to zoom · drag to pan when zoomed. Tap or use Flip to see the back.</div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <div class="side-section">
+      <div class="side-section-head"><div class="eyebrow">Artwork</div></div>
+      <div class="upload-row">
+        <label class="upload-slot" id="frontSlot">
+          <input type="file" accept="image/*" id="frontInput">
+          <div class="label">Front image</div>
+          <div class="sub">Card-dimension art</div>
+        </label>
+        <label class="upload-slot" id="backSlot">
+          <input type="file" accept="image/*" id="backInput">
+          <div class="label">Back image</div>
+          <div class="sub">Optional</div>
+        </label>
+      </div>
+      <label class="upload-slot" id="maskSlot" style="grid-column: 1 / -1;">
+        <input type="file" accept="image/*" id="maskInput">
+        <div class="label">Foil mask</div>
+        <div class="sub">PNG — visible areas foil, transparent areas matte</div>
+      </label>
+    </div>
+
+    <div class="side-section">
+      <div class="side-section-head"><div class="eyebrow">Finish</div></div>
+
+      <div class="sub-label">Coating</div>
+      <div class="coating-grid">
+        <div class="style-swatch active" data-coating="matte">
+          <div class="chip" style="background:linear-gradient(135deg,#3a3f47,#2b3038);"></div>
+          <div class="name">Matte</div>
+        </div>
+        <div class="style-swatch" data-coating="foil">
+          <div class="chip" style="background:linear-gradient(135deg,#e9edf2,#9aa3ad 45%,#f4f7fb 60%,#7d8792);"></div>
+          <div class="name">Foil</div>
+        </div>
+        <div class="style-swatch" data-coating="holographic">
+          <div class="chip" style="background:conic-gradient(from 0deg,#ff5f6d,#ffc371,#47cf73,#3aa0ff,#c86dfa,#ff5f6d);"></div>
+          <div class="name">Holo</div>
+        </div>
+        <div class="style-swatch" data-coating="gold-chrome">
+          <div class="chip" style="background:linear-gradient(135deg,#fff2b0,#c9971f 45%,#ffe58a 60%,#a5771a);"></div>
+          <div class="name">Gold</div>
+        </div>
+      </div>
+
+      <div class="sub-label" id="patternLabel">Pattern</div>
+      <div class="style-grid pattern-grid" id="patternGrid">
+        <div class="style-swatch active" data-pattern="crackle">
+          <div class="chip" style="background:linear-gradient(135deg,#ff5f6d,#ffc371,#47cf73,#3aa0ff,#c86dfa);"></div>
+          <div class="name">Crackle</div>
+        </div>
+        <div class="style-swatch" data-pattern="starburst">
+          <div class="chip" style="background:conic-gradient(from 0deg,#ff5f6d,#ffc371,#47cf73,#3aa0ff,#c86dfa,#ff5f6d);"></div>
+          <div class="name">Starburst</div>
+        </div>
+        <div class="style-swatch" data-pattern="refractor">
+          <div class="chip" style="background:repeating-linear-gradient(115deg,#ff5f6d 0 8%,#ffc371 8% 16%,#47cf73 16% 24%,#3aa0ff 24% 32%,#c86dfa 32% 40%);"></div>
+          <div class="name">Refractor</div>
+        </div>
+        <div class="style-swatch" data-pattern="prizm">
+          <div class="chip" style="background:repeating-conic-gradient(from 0deg,#ff5f6d 0 15deg,#3aa0ff 15deg 30deg,#47cf73 30deg 45deg,#c86dfa 45deg 60deg);"></div>
+          <div class="name">Prizm</div>
+        </div>
+        <div class="style-swatch" data-pattern="mosaic">
+          <div class="chip" style="background:conic-gradient(#ff5f6d 0 25%,#3aa0ff 0 50%,#47cf73 0 75%,#c86dfa 0);background-size:12px 12px;"></div>
+          <div class="name">Mosaic</div>
+        </div>
+        <div class="style-swatch" data-pattern="wave">
+          <div class="chip" style="background:linear-gradient(100deg,#ff5f6d,#ffc371,#47cf73,#3aa0ff,#c86dfa,#ff5f6d);"></div>
+          <div class="name">Wave</div>
+        </div>
+        <div class="style-swatch" data-pattern="pulsar">
+          <div class="chip" style="background:repeating-radial-gradient(circle at 50% 50%,#ff5f6d 0 3px,#3aa0ff 3px 6px,#47cf73 6px 9px);"></div>
+          <div class="name">Pulsar</div>
+        </div>
+        <div class="style-swatch" data-pattern="cracked-ice">
+          <div class="chip" style="background:linear-gradient(60deg,#dfefff,#9ad4ff 40%,#fff 55%,#7fb8e6);"></div>
+          <div class="name">Cracked Ice</div>
+        </div>
+      </div>
+
+      <div class="opacity-row">
+        <label>Intensity</label>
+        <input type="range" id="foilOpacity" min="0" max="100" value="85">
+      </div>
+      <div class="opacity-row">
+        <label>Corners</label>
+        <input type="range" id="bezelRange" min="0" max="48" step="1" value="16">
+        <div class="num-px"><input type="number" id="bezelNum" min="0" max="48" step="1" value="16"><span>px</span></div>
+      </div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-section-head"><div class="eyebrow">Card details</div><div class="count" id="metaCount"></div></div>
+      <div class="field">
+        <label>Card name</label>
+        <input type="text" id="metaCardName" placeholder="e.g. Julio Rodríguez">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Year</label>
+          <input type="number" id="metaYear" min="2026" max="2100" step="1" placeholder="2026">
+        </div>
+        <div class="field">
+          <label>Series</label>
+          <input type="number" id="metaSeries" min="1" max="99" step="1" placeholder="1">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Card number <span class="field-hint">random</span></label>
+          <div class="num-with-btn">
+            <input type="text" id="metaCardNumber" placeholder="#001">
+            <button type="button" class="mini-btn" id="autoNumBtn" title="Pick a random unused number in the series">Random</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Card set</label>
+          <input type="text" id="metaCardSet" placeholder="Chrome">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Brand</label>
+          <input type="text" id="metaBrand" list="brandList" placeholder="Topps">
+          <datalist id="brandList">
+            <option>Topps</option><option>Bowman</option><option>Panini</option>
+            <option>Upper Deck</option><option>Fleer</option><option>Donruss</option>
+            <option>Score</option><option>Leaf</option><option>Stadium Club</option>
+            <option>Topps Chrome</option><option>Bowman Chrome</option>
+          </datalist>
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <input type="text" id="metaType" list="typeList" placeholder="Base">
+          <datalist id="typeList">
+            <option>Base</option><option>Insert</option><option>Parallel</option>
+            <option>Autograph</option><option>Relic</option><option>Refractor</option>
+            <option>Short Print</option><option>Chrome</option><option>Prospect</option>
+          </datalist>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Team</label>
+          <input type="text" id="metaTeam" placeholder="Seattle Mariners">
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <input type="text" id="metaCategory" list="categoryList" placeholder="Hitter">
+          <datalist id="categoryList">
+            <option>Hitter</option><option>Pitcher</option><option>Rookie</option>
+            <option>Veteran</option><option>Legend</option><option>Prospect</option>
+          </datalist>
+        </div>
+      </div>
+      <div class="field">
+        <label>Player position</label>
+        <select id="metaPosition">
+          <option value="">—</option>
+          <option value="P">Pitcher (P)</option>
+          <option value="SP">Starting Pitcher (SP)</option>
+          <option value="RP">Relief Pitcher (RP)</option>
+          <option value="C">Catcher (C)</option>
+          <option value="1B">First Base (1B)</option>
+          <option value="2B">Second Base (2B)</option>
+          <option value="3B">Third Base (3B)</option>
+          <option value="SS">Shortstop (SS)</option>
+          <option value="LF">Left Field (LF)</option>
+          <option value="CF">Center Field (CF)</option>
+          <option value="RF">Right Field (RF)</option>
+          <option value="OF">Outfield (OF)</option>
+          <option value="IF">Infield (IF)</option>
+          <option value="DH">Designated Hitter (DH)</option>
+          <option value="UTIL">Utility (UTIL)</option>
+        </select>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="lbl">Rookie card</div>
+          <div class="sub">Marks the card with an RC badge</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="metaRookie">
+          <span class="slider-track"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label>Additional info</label>
+        <textarea id="metaAdditional" rows="2" placeholder="Serial number, notes, provenance…"></textarea>
+      </div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-section-head"><div class="eyebrow">Statistics</div></div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="lbl">Show batting stats</div>
+          <div class="sub">Batter stat block on the card</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="showBatter">
+          <span class="slider-track"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label>Batting CSV <span class="field-hint">YEAR,TEAM,G,AB,R,H,2B,3B,HR,RBI,SB,AVG</span></label>
+        <textarea id="metaBatterStats" rows="3" placeholder="One season per line, e.g.&#10;2027,SEA,150,600,95,180,32,4,28,95,20,.300"></textarea>
+      </div>
+
+      <div class="toggle-row" style="margin-top:8px;">
+        <div>
+          <div class="lbl">Show pitching stats</div>
+          <div class="sub">Pitcher stat block on the card</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="showPitcher">
+          <span class="slider-track"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label>Pitching CSV <span class="field-hint">YEAR,TEAM,G,IP,W,L,SV,H,BB,SO,ERA</span></label>
+        <textarea id="metaPitcherStats" rows="3" placeholder="One season per line, e.g.&#10;2027,SEA,32,205.1,18,6,0,170,45,240,2.85"></textarea>
+      </div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-section-head"><div class="eyebrow">Interaction</div></div>
+      <div class="toggle-row">
+        <div>
+          <div class="lbl">Auto-return on release</div>
+          <div class="sub">Card settles flat when you let go</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="autoReturnToggle" checked>
+          <span class="slider-track"></span>
+        </label>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- VIEWER details (read-only) -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="dp-head">
+      <div class="eyebrow">Vitrine — Card</div>
+      <h2 class="dp-title" id="dpTitle">Card Name</h2>
+      <div class="dp-sub" id="dpSub">Team · Position</div>
+    </div>
+    <div class="dp-finish" id="dpFinish"></div>
+    <div class="dp-grid" id="dpGrid"></div>
+    <div class="dp-stats" id="dpStats"></div>
+    <div class="dp-note" id="dpNote"></div>
+    <div class="dp-actions">
+      <button class="btn-solid" id="dpEditBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+        Edit card
+      </button>
+      <button class="btn-danger" id="dpDeleteBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="gallery-view" id="galleryView">
+  <div class="gallery-head">
+    <div>
+      <div class="eyebrow">Vitrine — Collection</div>
+      <h2 id="galleryTitle">Your Cards</h2>
+    </div>
+    <input type="text" class="gallery-search" id="gallerySearch" placeholder="Search name, team, brand…">
+  </div>
+  <div class="gallery-grid" id="galleryGrid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  // ---------------- State ----------------
+  const state = {
+    coating: 'matte',       // matte | foil | holographic | gold-chrome
+    pattern: 'crackle',     // refractive texture used by non-matte coatings
+    foilOpacity: 0.85,      // finish intensity
+    bezel: 16,              // corner radius in px (match a card series)
+    aspect: 5/7,            // card width / height (from the front image)
+    hasMask: false,
+    autoReturn: true,
+    flipped: false,
+    zoom: 1,                // 1..MAX_ZOOM
+    panX: 0, panY: 0,       // px offset when zoomed in
+    frontURL: null,
+    backURL: null,
+    maskURL: null,
+  };
+
+  const cardStage = document.getElementById('cardStage');
+  const card3d = document.getElementById('card3d');
+  const faceFront = document.getElementById('faceFront');
+  const faceBack = document.getElementById('faceBack');
+  const foilLayer = document.getElementById('foilLayer');
+  const shineLayer = document.getElementById('shineLayer');
+  const frontImg = document.getElementById('frontImg');
+  const backImg = document.getElementById('backImg');
+  const backGenerated = document.getElementById('backGenerated');
+  const frontPlaceholder = document.getElementById('frontPlaceholder');
+
+  // ---------------- Rotate / zoom / pan physics ----------------
+  // Drag freely rotates the card (turntable) — unclamped, so it can spin all the way
+  // around either axis. Vertical drag rotates around the horizontal axis (tumble over
+  // the top); horizontal drag around the vertical axis. With "auto-return" on it
+  // springs back to the nearest flat face on release; turn it off to hold any angle.
+  let targetRX = 0, targetRY = 0, curRX = 0, curRY = 0;
+  let curZoom = 1, curPanX = 0, curPanY = 0;
+  let dragging = false, panMode = false;
+  let startX = 0, startY = 0, lastX = 0, lastY = 0, moved = 0, baseRX = 0, baseRY = 0;
+  let rafId = null;
+  const MIN_ZOOM = 1, MAX_ZOOM = 4, ROT_SENS = 0.6;   // degrees of rotation per pixel dragged
+
+  function clampPan(){
+    const rect = cardStage.getBoundingClientRect();
+    const maxX = (state.zoom - 1) * rect.width / 2;
+    const maxY = (state.zoom - 1) * rect.height / 2;
+    state.panX = Math.min(maxX, Math.max(-maxX, state.panX));
+    state.panY = Math.min(maxY, Math.max(-maxY, state.panY));
+  }
+  function setZoom(z){
+    state.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
+    if (state.zoom === 1){ state.panX = 0; state.panY = 0; }
+    clampPan();
+    cardStage.style.cursor = state.zoom > 1 ? 'move' : 'grab';
+  }
+  function resetView(){
+    targetRX = 0; targetRY = 0;
+    setZoom(1);
+  }
+
+  // Unified single-pointer drag: rotate when at 1x, pan when zoomed in.
+  function dragStart(x, y){
+    dragging = true; card3d.classList.add('dragging');
+    panMode = state.zoom > 1;
+    startX = lastX = x; startY = lastY = y; moved = 0;
+    baseRX = targetRX; baseRY = targetRY;
+  }
+  function dragMove(x, y){
+    if (!dragging) return;
+    moved = Math.hypot(x - startX, y - startY);
+    if (panMode){
+      state.panX += (x - lastX); state.panY += (y - lastY);
+      lastX = x; lastY = y; clampPan();
+    } else {
+      targetRY = baseRY + (x - startX) * ROT_SENS;   // horizontal drag -> vertical axis
+      targetRX = baseRX - (y - startY) * ROT_SENS;   // vertical drag   -> horizontal axis
+    }
+  }
+  function dragEnd(){
+    if (!dragging) return;
+    dragging = false; card3d.classList.remove('dragging');
+    if (moved < 6 && !panMode && state.zoom <= 1){ flipCard(); return; }   // tap = flip
+    if (!panMode && state.autoReturn){
+      targetRX = 0;                              // settle upright
+      targetRY = Math.round(targetRY / 180) * 180;   // ...but keep whichever face is showing
+    }
+  }
+
+  // Mouse
+  cardStage.addEventListener('mousedown', e => { dragStart(e.clientX, e.clientY); e.preventDefault(); });
+  window.addEventListener('mousemove', e => dragMove(e.clientX, e.clientY));
+  window.addEventListener('mouseup', dragEnd);
+  cardStage.addEventListener('wheel', e => {
+    e.preventDefault();
+    setZoom(state.zoom * (e.deltaY < 0 ? 1.12 : 1/1.12));
+  }, { passive: false });
+
+  // Touch: one finger drags, two fingers pinch-zoom
+  let pinchDist = 0, pinchZoom = 1;
+  const touchDist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  cardStage.addEventListener('touchstart', e => {
+    if (e.touches.length === 2){
+      dragging = false; pinchDist = touchDist(e.touches); pinchZoom = state.zoom;
+    } else if (e.touches.length === 1){
+      dragStart(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+  window.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && pinchDist > 0){
+      setZoom(pinchZoom * touchDist(e.touches) / pinchDist);
+      if (e.cancelable) e.preventDefault();
+    } else if (e.touches.length === 1 && dragging){
+      dragMove(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.cancelable) e.preventDefault();
+    }
+  }, { passive: false });
+  window.addEventListener('touchend', e => {
+    if (e.touches.length === 0){ dragEnd(); pinchDist = 0; }
+  });
+
+  function lerp(a,b,t){ return a + (b-a)*t; }
+
+  function loop(){
+    curRX = lerp(curRX, targetRX, 0.16);
+    curRY = lerp(curRY, targetRY, 0.16);
+    curZoom = lerp(curZoom, state.zoom, 0.2);
+    curPanX = lerp(curPanX, state.panX, 0.25);
+    curPanY = lerp(curPanY, state.panY, 0.25);
+
+    card3d.style.transform =
+      `translate(${curPanX.toFixed(2)}px, ${curPanY.toFixed(2)}px) scale(${curZoom.toFixed(4)}) rotateY(${curRY.toFixed(2)}deg) rotateX(${curRX.toFixed(2)}deg)`;
+
+    // Which face points at the viewer? Toggle it explicitly rather than trusting
+    // backface-visibility, which some browsers mis-handle in this 3D setup (that was
+    // the "flip shows a mirrored front" bug). Works for rotation on either axis.
+    const rx = curRX * Math.PI/180, ry = curRY * Math.PI/180;
+    const frontFacing = Math.cos(rx) * Math.cos(ry) >= 0;
+    faceFront.style.visibility = frontFacing ? 'visible' : 'hidden';
+    faceBack.style.visibility  = frontFacing ? 'hidden'  : 'visible';
+
+    // Light/glare position derived from the card's angle, so foil sweeps as it turns.
+    const lx = 0.5 + 0.5 * Math.sin(ry);
+    const ly = 0.5 - 0.5 * Math.sin(rx);
+    shineLayer.style.background = `radial-gradient(circle at ${(lx*100).toFixed(1)}% ${(ly*100).toFixed(1)}%, rgba(255,255,255,0.55), rgba(255,255,255,0.08) 32%, transparent 60%)`;
+    updateFoilBackground(lx, ly, curRX, curRY);
+
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function flipCard(){ targetRY += 180; }   // half-turn on the vertical axis (readable back)
+  document.getElementById('flipBtn').addEventListener('click', flipCard);
+  document.getElementById('resetTiltBtn').addEventListener('click', resetView);
+
+  // ---------------- Foil backgrounds ----------------
+
+  let crackleTextureURL = null;
+
+  function generateCrackleTexture(){
+    const w = 500, h = 700;
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,w,h);
+
+    // seed points, grow branching cracks
+    const seeds = 14;
+    ctx.lineCap = 'round';
+    for (let s=0; s<seeds; s++){
+      let x = Math.random()*w, y = Math.random()*h;
+      let angle = Math.random()*Math.PI*2;
+      const branches = [{x,y,angle,life: 40 + Math.random()*40}];
+      while (branches.length){
+        const b = branches.pop();
+        let {x,y,angle,life} = b;
+        while (life > 0){
+          const hue = (s/seeds)*360;
+          ctx.strokeStyle = `hsl(${hue}, 90%, 70%)`;
+          ctx.lineWidth = 0.6 + Math.random()*1.1;
+          const nx = x + Math.cos(angle)*6;
+          const ny = y + Math.sin(angle)*6;
+          ctx.globalAlpha = 0.55 + Math.random()*0.45;
+          ctx.beginPath();
+          ctx.moveTo(x,y);
+          ctx.lineTo(nx,ny);
+          ctx.stroke();
+          x = nx; y = ny;
+          angle += (Math.random()-0.5) * 0.9;
+          life--;
+          if (Math.random() < 0.045 && branches.length < 60){
+            branches.push({x, y, angle: angle + (Math.random()-0.5)*2, life: life*0.6});
+          }
+          if (x < 0 || x > w || y < 0 || y > h) break;
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    crackleTextureURL = canvas.toDataURL();
+  }
+  generateCrackleTexture();
+
+  // Intensity multiplier per coating (matte = no foil at all).
+  function coatingMult(){
+    switch(state.coating){
+      case 'matte': return 0;
+      case 'holographic': return 1.0;
+      case 'gold-chrome': return 0.95;
+      case 'foil': default: return 0.85;
+    }
+  }
+  function effectiveOpacity(){ return state.foilOpacity * coatingMult(); }
+
+  function updateFoilBackground(px, py, rx, ry){
+    if (state.coating === 'matte'){ foilLayer.style.opacity = 0; return; }
+
+    const angle = (ry * 4 + px * 60) % 360;
+    const cx = px * 100, cy = py * 100;
+    let bg, size = '220% 220%', pos = 'center';
+
+    switch(state.pattern){
+      case 'starburst':
+        bg = `conic-gradient(from ${angle}deg at ${cx}% ${cy}%,#ff5f6d,#ffc371,#f4e04d,#47cf73,#3aa0ff,#6d5ffa,#c86dfa,#ff5f6d)`;
+        break;
+      case 'refractor': {
+        const s = px*40 + ry*2;
+        bg = `repeating-linear-gradient(${115 + rx*0.6}deg,#ff5f6d ${s}%,#ffc371 ${s+9}%,#f4e04d ${s+18}%,#47cf73 ${s+27}%,#3aa0ff ${s+36}%,#6d5ffa ${s+45}%,#c86dfa ${s+54}%,#ff5f6d ${s+63}%)`;
+        break;
+      }
+      case 'prizm':
+        bg = `repeating-conic-gradient(from ${angle}deg at ${cx}% ${cy}%,#ff5f6d 0 12deg,#3aa0ff 12deg 24deg,#47cf73 24deg 36deg,#c86dfa 36deg 48deg,#ffc371 48deg 60deg)`;
+        break;
+      case 'mosaic':
+        bg = `conic-gradient(from ${angle}deg,#ff5f6d 0 25%,#3aa0ff 0 50%,#47cf73 0 75%,#c86dfa 0)`;
+        size = '26px 26px'; pos = `${px*40}px ${py*40}px`;
+        break;
+      case 'wave': {
+        const s = px*30 + ry*3;
+        bg = `linear-gradient(${100 + rx}deg,#ff5f6d ${s}%,#ffc371 ${s+14}%,#47cf73 ${s+28}%,#3aa0ff ${s+42}%,#c86dfa ${s+56}%,#ff5f6d ${s+70}%)`;
+        break;
+      }
+      case 'pulsar':
+        bg = `repeating-radial-gradient(circle at ${cx}% ${cy}%,#ff5f6d 0 6px,#ffc371 6px 12px,#47cf73 12px 18px,#3aa0ff 18px 24px,#c86dfa 24px 30px)`;
+        size = '200% 200%';
+        break;
+      case 'cracked-ice':
+        bg = `url(${crackleTextureURL})`;
+        size = '120% 120%'; pos = `${50 + px*15}% ${50 + py*15}%`;
+        break;
+      case 'crackle':
+      default:
+        bg = `url(${crackleTextureURL})`;
+        size = '160% 160%'; pos = `${40 + px*20}% ${40 + py*20}%`;
+        break;
+    }
+
+    // Coating tints the same pattern differently.
+    let hue = 0, sat = 1.3, bri = 1.15, pre = '';
+    if (state.coating === 'holographic'){ sat = 1.9; bri = 1.4; hue = px*180 + ry*3; }
+    else if (state.coating === 'foil'){ sat = 1.1; bri = 1.08; hue = px*60 + ry*2; }
+    else if (state.coating === 'gold-chrome'){ pre = 'grayscale(1) sepia(1) saturate(5.5) hue-rotate(-12deg) '; bri = 1.15; sat = 1; }
+
+    // Gold-chrome reads as a metallic tint (overlay) rather than a prismatic glow (color-dodge).
+    foilLayer.style.mixBlendMode = state.coating === 'gold-chrome' ? 'overlay' : 'color-dodge';
+    foilLayer.style.opacity = effectiveOpacity();
+    foilLayer.style.filter = `${pre}hue-rotate(${hue}deg) saturate(${sat}) brightness(${bri})`;
+    foilLayer.style.backgroundImage = bg;
+    foilLayer.style.backgroundSize = size;
+    foilLayer.style.backgroundPosition = pos;
+  }
+
+  // Coating swatches
+  const patternGrid = document.getElementById('patternGrid');
+  function setCoating(coating){
+    state.coating = coating;
+    document.querySelectorAll('.coating-grid .style-swatch').forEach(s=>{
+      s.classList.toggle('active', s.dataset.coating === coating);
+    });
+    // Pattern only matters for non-matte coatings.
+    patternGrid.classList.toggle('disabled', coating === 'matte');
+  }
+  document.querySelectorAll('.coating-grid .style-swatch').forEach(el=>{
+    el.addEventListener('click', ()=> setCoating(el.dataset.coating));
+  });
+
+  // Pattern swatches
+  function setPattern(pattern){
+    state.pattern = pattern;
+    patternGrid.querySelectorAll('.style-swatch').forEach(s=>{
+      s.classList.toggle('active', s.dataset.pattern === pattern);
+    });
+  }
+  patternGrid.querySelectorAll('.style-swatch').forEach(el=>{
+    el.addEventListener('click', ()=> setPattern(el.dataset.pattern));
+  });
+
+  // Intensity slider
+  document.getElementById('foilOpacity').addEventListener('input', (e)=>{
+    state.foilOpacity = e.target.value/100;
+    foilLayer.style.opacity = effectiveOpacity();
+  });
+
+  // Corner bezel slider
+  // Corner radius is a direct px value (0–48) so it can match a real card series.
+  function setBezel(px){
+    px = Math.min(48, Math.max(0, Math.round(px || 0)));
+    state.bezel = px;
+    document.getElementById('bezelRange').value = px;
+    document.getElementById('bezelNum').value = px;
+    document.documentElement.style.setProperty('--bezel', px + 'px');
+  }
+  document.getElementById('bezelRange').addEventListener('input', (e)=> setBezel(Number(e.target.value)));
+  document.getElementById('bezelNum').addEventListener('input', (e)=> setBezel(Number(e.target.value)));
+
+  document.getElementById('autoReturnToggle').addEventListener('change', (e)=>{
+    state.autoReturn = e.target.checked;
+  });
+
+  // ---------------- Uploads ----------------
+  function readFileAsDataURL(file){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = ()=> resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // A card's front/back/mask is EITHER an inline data URL (added on this device)
+  // or a filename relative to the cards/ folder (published in the repo). resolveSrc
+  // turns whichever one into something an <img>/mask can actually load.
+  const CARDS_DIR = 'cards/';
+  function resolveSrc(ref){
+    if (!ref) return null;
+    if (/^(data:|blob:|https?:\/\/|\/)/.test(ref)) return ref;
+    // Bare filename in the cards/ folder — encode each segment so spaces and other
+    // characters in filenames (e.g. "2027 S1 AntVol.jpg") load correctly.
+    const rel = ref.startsWith(CARDS_DIR) ? ref.slice(CARDS_DIR.length) : ref;
+    return CARDS_DIR + rel.split('/').map(encodeURIComponent).join('/');
+  }
+
+  // Setters — used by both file uploads and loading a saved card. state.*URL keeps
+  // the RAW reference (so it round-trips to the manifest); the DOM gets resolveSrc().
+  // Size the card stage to the front image's aspect ratio, fit within the viewport.
+  function applyAspect(aspect){
+    if (!aspect || !isFinite(aspect) || aspect <= 0) aspect = 5/7;
+    state.aspect = aspect;
+    const mobile = window.matchMedia('(max-width:560px)').matches;
+    const viewer = document.body.classList.contains('viewer-open');
+    let maxW, maxH;
+    if (mobile){
+      maxW = Math.min(window.innerWidth * 0.86, 400);
+      maxH = Math.min(window.innerHeight * 0.60, 620);
+    } else {
+      // As large as fits: reserve ~415px for the topbar + header + controls + hint so
+      // the card grows with the monitor but the flip controls stay on screen. Viewer
+      // mode has a wider left column, so it gets more width and a taller cap.
+      maxH = Math.min(window.innerHeight - 380, viewer ? 880 : 760);
+      maxW = Math.min(window.innerWidth * (viewer ? 0.56 : 0.44), viewer ? 820 : 620);
+    }
+    let h = Math.min(maxH, maxW / aspect);
+    let w = h * aspect;
+    if (w > maxW){ w = maxW; h = w / aspect; }
+    cardStage.style.width = w + 'px';
+    cardStage.style.height = h + 'px';
+  }
+  window.addEventListener('resize', ()=> applyAspect(state.aspect));
+
+  function setFront(ref){
+    state.frontURL = ref || null;
+    const src = resolveSrc(ref);
+    if (src){
+      frontImg.onload = ()=>{
+        if (frontImg.naturalWidth && frontImg.naturalHeight){
+          applyAspect(frontImg.naturalWidth / frontImg.naturalHeight);
+        }
+      };
+      frontImg.src = src;
+      frontImg.style.display = 'block';
+      frontPlaceholder.style.display = 'none';
+      document.getElementById('frontSlot').classList.add('filled');
+    } else {
+      frontImg.onload = null;
+      frontImg.removeAttribute('src');
+      frontImg.style.display = 'none';
+      frontPlaceholder.style.display = '';
+      document.getElementById('frontSlot').classList.remove('filled');
+    }
+  }
+  function setBack(ref){
+    state.backURL = ref || null;
+    const src = resolveSrc(ref);
+    if (src){
+      backImg.src = src;
+      backImg.style.display = 'block';
+      backGenerated.style.display = 'none';
+      document.getElementById('backSlot').classList.add('filled');
+    } else {
+      backImg.removeAttribute('src');
+      backImg.style.display = 'none';
+      backGenerated.style.display = '';
+      document.getElementById('backSlot').classList.remove('filled');
+    }
+  }
+  function setMask(ref){
+    state.maskURL = ref || null;
+    const url = resolveSrc(ref);
+    if (url){
+      // Alpha mask: opaque areas of the PNG show foil, transparent areas stay matte.
+      foilLayer.style.webkitMaskImage = `url(${url})`;
+      foilLayer.style.maskImage = `url(${url})`;
+      foilLayer.style.webkitMaskMode = 'alpha';
+      foilLayer.style.maskMode = 'alpha';
+      foilLayer.classList.remove('no-mask');
+      state.hasMask = true;
+      document.getElementById('maskSlot').classList.add('filled');
+    } else {
+      foilLayer.style.webkitMaskImage = '';
+      foilLayer.style.maskImage = '';
+      foilLayer.classList.add('no-mask');
+      state.hasMask = false;
+      document.getElementById('maskSlot').classList.remove('filled');
+    }
+    foilLayer.style.opacity = effectiveOpacity();
+  }
+  function setFoilOpacity(val){
+    state.foilOpacity = val;
+    document.getElementById('foilOpacity').value = Math.round(val*100);
+    foilLayer.style.opacity = effectiveOpacity();
+  }
+
+  document.getElementById('frontInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if (!file) return;
+    setFront(await readFileAsDataURL(file));
+  });
+  document.getElementById('backInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if (!file) return;
+    setBack(await readFileAsDataURL(file));
+  });
+  document.getElementById('maskInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if (!file) return;
+    setMask(await readFileAsDataURL(file));
+  });
+
+  // ---------------- Metadata ----------------
+  const metaFields = {
+    cardName: document.getElementById('metaCardName'),
+    year: document.getElementById('metaYear'),
+    cardNumber: document.getElementById('metaCardNumber'),
+    series: document.getElementById('metaSeries'),
+    cardSet: document.getElementById('metaCardSet'),
+    brand: document.getElementById('metaBrand'),
+    type: document.getElementById('metaType'),
+    team: document.getElementById('metaTeam'),
+    category: document.getElementById('metaCategory'),
+    position: document.getElementById('metaPosition'),
+    additional: document.getElementById('metaAdditional'),
+    batterStats: document.getElementById('metaBatterStats'),
+    pitcherStats: document.getElementById('metaPitcherStats'),
+  };
+  const metaRookie = document.getElementById('metaRookie');
+  const showBatter = document.getElementById('showBatter');
+  const showPitcher = document.getElementById('showPitcher');
+  const backStats = document.getElementById('backStats');
+
+  // Stat blocks: paste CSV (one season per line) in these fixed column orders.
+  const BATTER_COLS = ['YEAR','TEAM','G','AB','R','H','2B','3B','HR','RBI','SB','AVG'];
+  const PITCHER_COLS = ['YEAR','TEAM','G','IP','W','L','SV','H','BB','SO','ERA'];
+  function statTable(csv, cols, title){
+    const rows = String(csv || '').trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+      .map(l => l.split(',').map(c => c.trim()));
+    if (!rows.length) return '';
+    const head = cols.map(c => `<th>${c}</th>`).join('');
+    const body = rows.map(r => '<tr>' + cols.map((_, i) => `<td>${escapeHtml(r[i] || '')}</td>`).join('') + '</tr>').join('');
+    return `<div class="stat-block"><div class="stat-title">${title}</div><table class="stat-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+  }
+  function statsHTML(card){
+    let html = '';
+    if (card.showBatter)  html += statTable(card.batterStats,  BATTER_COLS,  'Batting');
+    if (card.showPitcher) html += statTable(card.pitcherStats, PITCHER_COLS, 'Pitching');
+    return html;
+  }
+
+  const titleDisplay = document.getElementById('cardTitleDisplay');
+  const backName = document.getElementById('backName');
+  const backTeam = document.getElementById('backTeam');
+  const backBrand = document.getElementById('backBrand');
+  const backYearNum = document.getElementById('backYearNum');
+  const backSeries = document.getElementById('backSeries');
+  const backCardNo = document.getElementById('backCardNo');
+  const backSet = document.getElementById('backSet');
+  const backType = document.getElementById('backType');
+  const backTeamCell = document.getElementById('backTeamCell');
+  const backCategory = document.getElementById('backCategory');
+  const backNote = document.getElementById('backNote');
+
+  function refreshMeta(){
+    const v = k => (metaFields[k].value || '').trim();
+    titleDisplay.textContent = v('cardName') || 'Untitled Card';
+    backName.innerHTML = escapeHtml(v('cardName') || 'Card Name') + (metaRookie.checked ? ' <span class="rookie-badge">RC</span>' : '');
+    backTeam.textContent = `${v('team') || 'Team'} · ${v('position') || 'Pos'}`;
+    backBrand.textContent = (v('brand') || 'BRAND').toUpperCase();
+    backYearNum.textContent = `${v('year') || '—'} · ${v('cardNumber') || '—'}`;
+    backSeries.textContent = v('series') || '—';
+    backCardNo.textContent = v('cardNumber') || '—';
+    backSet.textContent = v('cardSet') || '—';
+    backType.textContent = v('type') || '—';
+    backTeamCell.textContent = v('team') || '—';
+    backCategory.textContent = v('category') || '—';
+    const note = v('additional');
+    backNote.textContent = note;
+    backNote.style.display = note ? 'block' : 'none';
+    backStats.innerHTML = statsHTML({
+      showBatter: showBatter.checked, showPitcher: showPitcher.checked,
+      batterStats: v('batterStats'), pitcherStats: v('pitcherStats'),
+    });
+  }
+  Object.values(metaFields).forEach(inp => {
+    inp.addEventListener('input', refreshMeta);
+    inp.addEventListener('change', refreshMeta);
+  });
+  metaRookie.addEventListener('change', refreshMeta);
+  showBatter.addEventListener('change', refreshMeta);
+  showPitcher.addEventListener('change', refreshMeta);
+  refreshMeta();
+
+  // ---------------- Device orientation (mobile gyro tilt) ----------------
+  const gyroBtn = document.getElementById('gyroBtn');
+  let gyroActive = false;
+
+  function supportsGyro(){
+    return typeof DeviceOrientationEvent !== 'undefined';
+  }
+  if (supportsGyro()) gyroBtn.style.display = 'inline-flex';
+
+  const GYRO_TILT = 18;   // gyro nudges a gentle tilt, not a full rotation
+  function handleOrientation(e){
+    if (!gyroActive) return;
+    targetRY = Math.max(Math.min((e.gamma || 0), GYRO_TILT), -GYRO_TILT);
+    targetRX = Math.max(Math.min(-(e.beta - 45) * 0.4, GYRO_TILT), -GYRO_TILT);
+  }
+
+  gyroBtn.addEventListener('click', async ()=>{
+    if (typeof DeviceOrientationEvent.requestPermission === 'function'){
+      try{
+        const res = await DeviceOrientationEvent.requestPermission();
+        if (res !== 'granted') return;
+      } catch(err){ return; }
+    }
+    gyroActive = !gyroActive;
+    gyroBtn.textContent = gyroActive ? 'Motion tilt: on' : 'Use motion tilt';
+    if (gyroActive) window.addEventListener('deviceorientation', handleOrientation);
+    else window.removeEventListener('deviceorientation', handleOrientation);
+  });
+
+  // ---------------- Collection (IndexedDB) ----------------
+  const DB_NAME = 'vitrine', STORE = 'cards';
+  let db = null, currentId = null, currentCreatedAt = null, allCards = [];
+
+  function openDB(){
+    return new Promise((resolve, reject)=>{
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = ()=>{ req.result.createObjectStore(STORE, { keyPath: 'id' }); };
+      req.onsuccess = ()=> resolve(req.result);
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+  function dbAll(){
+    return new Promise((resolve, reject)=>{
+      const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+      req.onsuccess = ()=> resolve(req.result || []);
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+  function dbPut(card){
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(card);
+      tx.oncomplete = ()=> resolve();
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }
+  function dbDelete(id){
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).delete(id);
+      tx.oncomplete = ()=> resolve();
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }
+
+  function genId(){ return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  let toastTimer;
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> t.classList.remove('show'), 2300);
+  }
+
+  // Map legacy field names (name/cardNo/foilStyle) onto the current schema.
+  function normalizeCard(c){
+    c = c || {};
+    return {
+      ...c,
+      cardName: c.cardName != null ? c.cardName : (c.name || ''),
+      cardNumber: c.cardNumber != null ? c.cardNumber : (c.cardNo || ''),
+      cardSet: c.cardSet || '',
+      // Series is numeric now; pull the number out of legacy strings like "Series 1".
+      series: (String(c.series == null ? '' : c.series).match(/\d+/) || [''])[0],
+      type: c.type || '',
+      category: c.category || '',
+      brand: c.brand || '',
+      team: c.team || '',
+      position: c.position || '',
+      additional: c.additional != null ? c.additional : (c.additionalInfo || ''),
+      rookie: !!c.rookie,
+      batterStats: c.batterStats || '',
+      pitcherStats: c.pitcherStats || '',
+      showBatter: !!c.showBatter,
+      showPitcher: !!c.showPitcher,
+      pattern: c.pattern || c.foilStyle || 'crackle',
+      // Old cards carried a foil style but no coating concept — show them shiny.
+      coating: c.coating || (c.foilStyle ? 'holographic' : 'matte'),
+    };
+  }
+
+  // Read the editor into a card object / write a card object into the editor.
+  function readEditor(){
+    return {
+      id: currentId,
+      cardName: metaFields.cardName.value.trim(),
+      year: metaFields.year.value.trim(),
+      cardNumber: metaFields.cardNumber.value.trim(),
+      series: metaFields.series.value.trim(),
+      cardSet: metaFields.cardSet.value.trim(),
+      brand: metaFields.brand.value.trim(),
+      type: metaFields.type.value.trim(),
+      team: metaFields.team.value.trim(),
+      category: metaFields.category.value.trim(),
+      position: metaFields.position.value,
+      rookie: metaRookie.checked,
+      additional: metaFields.additional.value.trim(),
+      batterStats: metaFields.batterStats.value.trim(),
+      pitcherStats: metaFields.pitcherStats.value.trim(),
+      showBatter: showBatter.checked,
+      showPitcher: showPitcher.checked,
+      coating: state.coating,
+      pattern: state.pattern,
+      foilOpacity: state.foilOpacity,
+      bezel: state.bezel,
+      aspect: state.aspect,
+      front: state.frontURL,
+      back: state.backURL,
+      mask: state.maskURL,
+    };
+  }
+  function applyCard(card){
+    card = normalizeCard(card);
+    currentId = card.id || null;
+    currentCreatedAt = card.createdAt || null;
+    metaFields.cardName.value = card.cardName || '';
+    metaFields.year.value = card.year || '';
+    metaFields.cardNumber.value = card.cardNumber || '';
+    metaFields.series.value = card.series || '';
+    metaFields.cardSet.value = card.cardSet || '';
+    metaFields.brand.value = card.brand || '';
+    metaFields.type.value = card.type || '';
+    metaFields.team.value = card.team || '';
+    metaFields.category.value = card.category || '';
+    metaFields.position.value = card.position || '';
+    metaFields.additional.value = card.additional || '';
+    metaFields.batterStats.value = card.batterStats || '';
+    metaFields.pitcherStats.value = card.pitcherStats || '';
+    metaRookie.checked = !!card.rookie;
+    showBatter.checked = !!card.showBatter;
+    showPitcher.checked = !!card.showPitcher;
+    refreshMeta();
+    setCoating(card.coating || 'matte');
+    setPattern(card.pattern || 'crackle');
+    setBezel(typeof card.bezel === 'number' ? card.bezel : 34);
+    applyAspect(card.aspect || (5/7));
+    setFront(card.front || null);
+    setBack(card.back || null);
+    setMask(card.mask || null);
+    setFoilOpacity(typeof card.foilOpacity === 'number' ? card.foilOpacity : 0.85);
+    resetView();
+    state.flipped = false;
+  }
+  // Card numbers follow the series ranges: series 1 = #001–#300, series 2 = #301–#600, …
+  // A random unused number in that range is picked (not the next sequential one).
+  function randomCardNumber(series){
+    const s = Math.max(1, parseInt(series) || 1);
+    const start = (s - 1) * 300 + 1, end = s * 300;
+    const used = new Set(
+      allCards.filter(c => c.id !== currentId)
+        .map(c => parseInt(String(c.cardNumber || '').replace(/\D/g, '')))
+        .filter(n => !isNaN(n))
+    );
+    const free = [];
+    for (let n = start; n <= end; n++){ if (!used.has(n)) free.push(n); }
+    const pick = free.length ? free[Math.floor(Math.random() * free.length)] : start;
+    return '#' + String(pick).padStart(3, '0');
+  }
+  function randomizeNumber(){
+    metaFields.cardNumber.value = randomCardNumber(metaFields.series.value);
+    refreshMeta();
+  }
+  // Reroll the number when the series changes; manual override still allowed.
+  metaFields.series.addEventListener('input', randomizeNumber);
+  document.getElementById('autoNumBtn').addEventListener('click', randomizeNumber);
+
+  function newCard(){
+    applyCard({});
+    metaFields.brand.value = 'Topps';
+    metaFields.year.value = String(Math.max(2026, new Date().getFullYear()));
+    metaFields.series.value = '1';
+    metaFields.cardNumber.value = randomCardNumber(1);
+    refreshMeta();
+    showEditor();
+  }
+
+  async function saveCard(){
+    const card = readEditor();
+    if (!card.front){ toast('Add a front image before saving'); return; }
+    if (!card.id){ card.id = genId(); currentId = card.id; }
+    card.createdAt = currentCreatedAt || Date.now();
+    card.updatedAt = Date.now();
+    currentCreatedAt = card.createdAt;
+    try { await dbPut(card); toast('Card saved'); showGallery(); }
+    catch(err){ toast('Save failed — storage unavailable'); }
+  }
+
+  // ---------------- Modes: gallery / viewer / editor ----------------
+  let viewedCard = null;
+  function setMode(mode){
+    document.body.classList.toggle('gallery-open', mode === 'gallery');
+    document.body.classList.toggle('viewer-open', mode === 'viewer');
+    window.scrollTo(0,0);
+  }
+  function showGallery(){ setMode('gallery'); refreshGallery(); }
+  function showEditor(){ setMode('editor'); applyAspect(state.aspect); }
+  function showViewer(card){
+    viewedCard = card;
+    applyCard(card);
+    renderDetails(card);
+    setMode('viewer');
+    applyAspect(state.aspect);
+  }
+
+  function cap(s){ return String(s||'').replace(/(^|-)([a-z])/g, (m,p,ch)=> (p ? ' ' : '') + ch.toUpperCase()); }
+  function renderDetails(raw){
+    const c = normalizeCard(raw);
+    document.getElementById('dpTitle').innerHTML = escapeHtml(c.cardName || 'Untitled Card') + (c.rookie ? ' <span class="rookie-badge">RC</span>' : '');
+    document.getElementById('dpSub').textContent = [c.team, c.position].filter(Boolean).join(' · ') || '—';
+
+    const coatNames = { matte:'Matte', foil:'Foil', holographic:'Holographic', 'gold-chrome':'Gold-Chrome' };
+    const coatColor = { matte:'#3a3f47', foil:'#cfd6de', holographic:'#3aa0ff', 'gold-chrome':'#d4a12a' };
+    let finish = `<span class="dp-chip"><span class="swatch" style="background:${coatColor[c.coating]||'#888'}"></span>${coatNames[c.coating]||escapeHtml(c.coating)}</span>`;
+    if (c.coating !== 'matte') finish += `<span class="dp-chip">${escapeHtml(cap(c.pattern))}</span>`;
+    document.getElementById('dpFinish').innerHTML = finish;
+
+    const cells = [
+      ['Year', c.year], ['Series', c.series ? 'Series ' + c.series : ''], ['Card No.', c.cardNumber],
+      ['Set', c.cardSet], ['Brand', c.brand], ['Type', c.type],
+      ['Position', c.position], ['Category', c.category],
+    ];
+    document.getElementById('dpGrid').innerHTML = cells.map(([k,v])=>
+      `<div class="dp-cell"><div class="k">${k}</div><div class="v">${escapeHtml(v || '—')}</div></div>`).join('');
+
+    document.getElementById('dpStats').innerHTML = statsHTML(c);
+
+    const note = c.additional || '';
+    const nEl = document.getElementById('dpNote');
+    nEl.textContent = note; nEl.style.display = note ? 'block' : 'none';
+  }
+
+  document.getElementById('dpEditBtn').addEventListener('click', ()=> showEditor());
+  document.getElementById('dpDeleteBtn').addEventListener('click', async ()=>{
+    if (!viewedCard) return;
+    const nm = viewedCard.cardName || viewedCard.name || 'this card';
+    if (!confirm(`Delete "${nm}"? This can't be undone.`)) return;
+    try {
+      await dbDelete(viewedCard.id);
+      if (currentId === viewedCard.id){ currentId = null; currentCreatedAt = null; }
+      if (viewedCard._origin === 'repo')
+        toast('Removed your local copy. This card is published in cards/ — delete it there to remove for good.');
+      else toast('Card deleted');
+      viewedCard = null;
+      showGallery();
+    } catch(e){ toast('Delete failed'); }
+  });
+
+  // Cache-bust every manifest fetch: static hosts often send no Cache-Control, so
+  // browsers can serve a stale copy on plain "no-cache" revalidation alone.
+  function noCacheURL(path){ return path + (path.includes('?') ? '&' : '?') + 'v=' + Date.now(); }
+  async function fetchManifest(name){
+    try {
+      const res = await fetch(noCacheURL(CARDS_DIR + name), { cache: 'no-store' });
+      if (!res.ok) return [];
+      const data = await res.json();
+      const cards = Array.isArray(data) ? data : (data.cards || []);
+      return cards.filter(c => c && c.id);
+    } catch(e){ return []; }
+  }
+
+  // Published cards from the repo folder. Cards can be split across multiple manifest
+  // files (cards.json, cards2027.json, cards2028.json, ...) — cards/index.json lists
+  // which ones exist (a static host can't list a folder on its own; tools/build-
+  // manifest.mjs regenerates index.json whenever it writes a manifest). Falls back to
+  // a single cards.json for older setups without an index. Read-only here — cards are
+  // managed by editing the folder and committing to git.
+  async function loadRepoCards(){
+    let names;
+    try {
+      const res = await fetch(noCacheURL(CARDS_DIR + 'index.json'), { cache: 'no-store' });
+      names = res.ok ? await res.json() : null;
+    } catch(e){ names = null; }
+    if (!Array.isArray(names) || !names.length) names = ['cards.json'];
+
+    const lists = await Promise.all(names.map(fetchManifest));
+    return lists.flat().map(c => ({ ...c, _origin: 'repo' }));
+  }
+
+  async function refreshGallery(){
+    const repo = await loadRepoCards();
+    let local = [];
+    try { local = (await dbAll()).map(c => ({ ...c, _origin: 'local' })); } catch(e){}
+    // Merge by id; a locally-saved edit of a repo card wins over the published one.
+    const byId = new Map();
+    repo.forEach(c => byId.set(c.id, c));
+    local.forEach(c => byId.set(c.id, c));
+    allCards = [...byId.values()];
+    allCards.sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0));
+    drawGallery();
+  }
+  function drawGallery(){
+    const grid = document.getElementById('galleryGrid');
+    const q = (document.getElementById('gallerySearch').value || '').trim().toLowerCase();
+    const cards = q
+      ? allCards.filter(c => `${c.cardName||c.name||''} ${c.team||''} ${c.brand||''} ${c.series||''} ${c.cardSet||''} ${c.year||''} ${c.type||''} ${c.category||''} ${c.position||''}`.toLowerCase().includes(q))
+      : allCards;
+    document.getElementById('galleryTitle').textContent = allCards.length ? `Your Cards (${allCards.length})` : 'Your Cards';
+    if (!cards.length){
+      grid.innerHTML = `<div class="gallery-empty" style="grid-column:1/-1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>
+        <div>${allCards.length ? 'No cards match your search.' : 'No cards yet. Hit “New” to create one.'}</div>
+      </div>`;
+      return;
+    }
+    grid.innerHTML = '';
+    cards.forEach(c=>{
+      const tile = document.createElement('div');
+      tile.className = 'gcard';
+      const name = c.cardName || c.name || 'Untitled Card';
+      const sub = [c.team, c.year].filter(Boolean).join(' · ') || '—';
+      const src = resolveSrc(c.front);
+      // Tile reflects the card's real orientation when known.
+      const ar = (typeof c.aspect === 'number' && c.aspect > 0) ? `style="aspect-ratio:${c.aspect}"` : '';
+      const thumb = src
+        ? `<img class="gcard-thumb" src="${src}" alt="" loading="lazy" ${ar}>`
+        : `<div class="gcard-thumb placeholder" ${ar}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></div>`;
+      // Repo cards live in the folder/manifest — they can't be deleted from the browser.
+      const delBtn = c._origin === 'local'
+        ? `<button class="gcard-del" title="Delete card" aria-label="Delete card">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+           </button>`
+        : '';
+      tile.innerHTML = `${thumb}
+        <div class="gcard-meta">
+          <div class="gcard-name">${escapeHtml(name)}</div>
+          <div class="gcard-sub">${escapeHtml(sub)}</div>
+        </div>
+        ${delBtn}`;
+      tile.addEventListener('click', (e)=>{
+        if (e.target.closest('.gcard-del')) return;
+        showViewer(c);
+      });
+      const del = tile.querySelector('.gcard-del');
+      if (del) del.addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        if (!confirm(`Delete "${name}"? This can't be undone.`)) return;
+        try {
+          await dbDelete(c.id);
+          if (currentId === c.id){ currentId = null; currentCreatedAt = null; }
+          await refreshGallery();
+          toast('Card deleted');
+        } catch(err){ toast('Delete failed'); }
+      });
+      grid.appendChild(tile);
+    });
+  }
+
+  // ---------------- Pack to folder (ZIP) / Import ----------------
+  // Minimal store-only (no compression) ZIP writer — no dependencies, works offline.
+  let CRC_TABLE;
+  function crc32(buf){
+    if (!CRC_TABLE){
+      CRC_TABLE = new Uint32Array(256);
+      for (let n=0; n<256; n++){ let c=n; for (let k=0;k<8;k++){ c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); } CRC_TABLE[n]=c>>>0; }
+    }
+    let crc = 0xFFFFFFFF;
+    for (let i=0;i<buf.length;i++){ crc = (crc>>>8) ^ CRC_TABLE[(crc ^ buf[i]) & 0xFF]; }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function zipStore(files){
+    const enc = new TextEncoder();
+    const parts = [], central = [];
+    let offset = 0;
+    for (const f of files){
+      const nameBytes = enc.encode(f.name);
+      const crc = crc32(f.data), size = f.data.length;
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0, true);
+      lh.setUint16(8, 0, true); lh.setUint16(10, 0, true); lh.setUint16(12, 0, true);
+      lh.setUint32(14, crc, true); lh.setUint32(18, size, true); lh.setUint32(22, size, true);
+      lh.setUint16(26, nameBytes.length, true); lh.setUint16(28, 0, true);
+      parts.push(new Uint8Array(lh.buffer), nameBytes, f.data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
+      ch.setUint16(8, 0, true); ch.setUint16(10, 0, true); ch.setUint16(12, 0, true); ch.setUint16(14, 0, true);
+      ch.setUint32(16, crc, true); ch.setUint32(20, size, true); ch.setUint32(24, size, true);
+      ch.setUint16(28, nameBytes.length, true); ch.setUint16(30, 0, true); ch.setUint16(32, 0, true);
+      ch.setUint16(34, 0, true); ch.setUint16(36, 0, true); ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+      central.push(new Uint8Array(ch.buffer), nameBytes);
+      offset += 30 + nameBytes.length + size;
+    }
+    let centralSize = 0; central.forEach(c => centralSize += c.length);
+    const eocd = new DataView(new ArrayBuffer(22));
+    eocd.setUint32(0, 0x06054b50, true); eocd.setUint16(4, 0, true); eocd.setUint16(6, 0, true);
+    eocd.setUint16(8, files.length, true); eocd.setUint16(10, files.length, true);
+    eocd.setUint32(12, centralSize, true); eocd.setUint32(16, offset, true); eocd.setUint16(20, 0, true);
+    return new Blob([...parts, ...central, new Uint8Array(eocd.buffer)], { type: 'application/zip' });
+  }
+  function dataURLtoBytes(dataURL){
+    const comma = dataURL.indexOf(',');
+    const head = dataURL.slice(0, comma), bin = atob(dataURL.slice(comma+1));
+    const bytes = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    const mime = (head.match(/data:([^;]+)/) || [])[1] || 'image/png';
+    return { bytes, mime };
+  }
+  const EXT = { 'image/png':'png', 'image/jpeg':'jpg', 'image/webp':'webp', 'image/gif':'gif' };
+  function slug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40); }
+
+  // Build a self-contained cards/ folder (images + cards.json) and download it zipped.
+  async function packToFolder(){
+    if (!allCards.length){ toast('Nothing to pack yet'); return; }
+    toast('Packing collection…');
+    const files = [], used = new Set();
+    const manifest = { app: 'vitrine', version: 1, generatedAt: new Date().toISOString(), cards: [] };
+    const uniq = (base) => {
+      let name = base, i = 1, dot = base.lastIndexOf('.');
+      const stem = dot > 0 ? base.slice(0, dot) : base, ext = dot > 0 ? base.slice(dot) : '';
+      while (used.has(name)) name = `${stem}-${i++}${ext}`;
+      used.add(name); return name;
+    };
+    async function fileFor(ref, card, kind){
+      if (!ref) return null;
+      try {
+        if (ref.startsWith('data:')){
+          const { bytes, mime } = dataURLtoBytes(ref);
+          const base = `${slug(card.cardName || card.name) || card.id}-${kind}.${EXT[mime] || 'png'}`;
+          const name = uniq(base);
+          files.push({ name: CARDS_DIR + name, data: bytes });
+          return name;
+        }
+        // repo/path — fetch the bytes so the zip is a complete snapshot
+        const res = await fetch(resolveSrc(ref));
+        if (!res.ok) throw 0;
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        const base = ref.split('/').pop();
+        if (!used.has(base)){ used.add(base); files.push({ name: CARDS_DIR + base, data: bytes }); }
+        return base;
+      } catch(e){ return ref.split('/').pop(); }   // keep the reference even if bytes unavailable
+    }
+    for (const raw of allCards){
+      const c = normalizeCard(raw);
+      const front = await fileFor(raw.front, c, 'front');
+      const back  = await fileFor(raw.back,  c, 'back');
+      const mask  = await fileFor(raw.mask,  c, 'mask');
+      manifest.cards.push({
+        id: c.id, cardName: c.cardName||'', year: c.year||'', cardNumber: c.cardNumber||'',
+        series: c.series||'', cardSet: c.cardSet||'', brand: c.brand||'', type: c.type||'',
+        team: c.team||'', category: c.category||'', position: c.position||'',
+        rookie: !!c.rookie, additional: c.additional||'',
+        batterStats: c.batterStats||'', pitcherStats: c.pitcherStats||'',
+        showBatter: !!c.showBatter, showPitcher: !!c.showPitcher,
+        coating: c.coating||'matte', pattern: c.pattern||'crackle',
+        foilOpacity: typeof c.foilOpacity === 'number' ? c.foilOpacity : 0.85,
+        bezel: typeof c.bezel === 'number' ? c.bezel : 16,
+        aspect: typeof c.aspect === 'number' ? c.aspect : undefined,
+        front, back, mask,
+      });
+    }
+    files.push({ name: CARDS_DIR + 'cards.json', data: new TextEncoder().encode(JSON.stringify(manifest, null, 2)) });
+    const blob = zipStore(files);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'vitrine-cards.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 1500);
+    toast(`Packed ${allCards.length} card${allCards.length===1?'':'s'} → vitrine-cards.zip`);
+  }
+  async function importFile(file){
+    try {
+      const data = JSON.parse(await file.text());
+      const cards = Array.isArray(data) ? data : (data.cards || []);
+      if (!cards.length){ toast('No cards found in that file'); return; }
+      let n = 0;
+      for (const c of cards){
+        if (!c || !c.front) continue;
+        if (!c.id) c.id = genId();
+        if (!c.createdAt) c.createdAt = Date.now();
+        c.updatedAt = c.updatedAt || Date.now();
+        await dbPut(c); n++;
+      }
+      await refreshGallery();
+      showGallery();
+      toast(`Imported ${n} card${n===1?'':'s'}`);
+    } catch(err){ toast('Import failed — not a valid collection file'); }
+  }
+
+  // ---------------- Wiring ----------------
+  document.getElementById('galleryBtn').addEventListener('click', showGallery);
+  document.getElementById('newCardBtn').addEventListener('click', ()=>{ newCard(); toast('New card — add art and details, then Save'); });
+  document.getElementById('saveCardBtn').addEventListener('click', saveCard);
+  document.getElementById('exportBtn').addEventListener('click', packToFolder);
+  document.getElementById('importInput').addEventListener('change', (e)=>{
+    const f = e.target.files[0]; if (f) importFile(f); e.target.value = '';
+  });
+  document.getElementById('gallerySearch').addEventListener('input', drawGallery);
+
+  // ---------------- Init ----------------
+  async function init(){
+    // Opened by double-clicking the file rather than through a server: fetch() to
+    // cards/ is blocked entirely, so the folder's cards silently can't load.
+    if (location.protocol === 'file:'){
+      document.getElementById('fileWarning').style.display = 'flex';
+    }
+    document.getElementById('fileWarningClose').addEventListener('click', ()=>{
+      document.getElementById('fileWarning').style.display = 'none';
+    });
+
+    try { db = await openDB(); } catch(e){ db = null; }
+    await refreshGallery();   // pulls repo (cards.json) + local (IndexedDB) into allCards
+    if (allCards.length) showGallery();   // land on the collection; open a card into the viewer
+    else newCard();                       // empty collection → straight to a blank editor
+    if (!db) toast('Saving is unavailable in this browser (new cards won’t persist)');
+  }
+
+  // Start the render loop now that every value it touches (crackleTextureURL, etc.) is initialized.
+  loop();
+  init();
+
+})();
+</script>
+</body>
+</html>
