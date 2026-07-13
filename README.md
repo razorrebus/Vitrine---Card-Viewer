@@ -1,12 +1,12 @@
 # Vitrine — Card Collection
 
 A 3D baseball-card viewer and collection browser. The whole viewer is one file,
-`card-viewer.html`; the cards themselves live as image files in the `cards/` folder
+`index.html`; the cards themselves live as image files in the `cards/` folder
 plus one or more manifest files (`cards.json`, `cards2027.json`, `cards2028.json`, ...).
 
 ```
-Card Viewer/
-├── card-viewer.html      the app (open this)
+Vitrine/
+├── index.html            the app (open this)
 ├── cards/
 │   ├── index.json        auto-generated: which manifest files exist
 │   ├── cards2027.json     manifest for the 2027 cards
@@ -39,7 +39,7 @@ all into one collection.
 ## Running it
 
 Because the app reads the `cards/` folder over the network, it must be **served over
-http** — double-clicking `card-viewer.html` directly (`file://`) won't let it load the
+http** — double-clicking `index.html` directly (`file://`) won't let it load the
 folder, and you'll only see cards saved locally in that browser, not the ones on disk.
 (The app detects this and shows a banner if it happens.)
 
@@ -52,7 +52,7 @@ To start it manually instead (any OS), from this folder:
 ```
 python -m http.server 8123
 ```
-then open <http://localhost:8123/card-viewer.html>. (Any static server works.)
+then open <http://localhost:8123/>. (Any static server works.)
 
 On your phone: publish to GitHub Pages (below) and open the URL there.
 
@@ -94,7 +94,7 @@ bundles everything into one publishable folder.
 1. Create a repo and push this folder to it.
 2. In the repo: **Settings → Pages → Build and deployment → Source: Deploy from a
    branch**, pick your branch and `/ (root)`, save.
-3. Your site appears at `https://<you>.github.io/<repo>/card-viewer.html`.
-   (Rename `card-viewer.html` to `index.html` if you'd like a shorter URL.)
+3. Your site appears at `https://<you>.github.io/<repo>/` (the app is `index.html`,
+   so no filename is needed in the URL).
 
 The included `.nojekyll` file tells GitHub Pages to serve the folder as-is.

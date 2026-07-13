@@ -405,6 +405,13 @@
     font-family: 'Playfair Display', serif; font-style: italic; font-weight: 700;
     font-size: 26px; margin: 4px 0 0 0; color: var(--ivory);
   }
+  .gallery-controls { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+  .sort-label { display: flex; flex-direction: column; gap: 5px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ivory-dim); font-weight: 600; }
+  .gallery-sort {
+    background: var(--panel); border: 1px solid var(--hairline); border-radius: 8px;
+    color: var(--ivory); font-family: 'Inter'; font-size: 13px; padding: 9px 12px; cursor: pointer;
+  }
+  .gallery-sort:focus { outline: none; border-color: var(--gold-soft); }
   .gallery-search {
     background: var(--panel); border: 1px solid var(--hairline); border-radius: 8px;
     color: var(--ivory); font-family: 'Inter'; font-size: 13px; padding: 9px 12px; min-width: 200px;
@@ -686,9 +693,9 @@
 
       <div class="sub-label" id="patternLabel">Pattern</div>
       <div class="style-grid pattern-grid" id="patternGrid">
-        <div class="style-swatch active" data-pattern="crackle">
-          <div class="chip" style="background:linear-gradient(135deg,#ff5f6d,#ffc371,#47cf73,#3aa0ff,#c86dfa);"></div>
-          <div class="name">Crackle</div>
+        <div class="style-swatch active" data-pattern="sheen">
+          <div class="chip" style="background:linear-gradient(115deg,#ff5f6d,#ffd36e,#fff,#6ee7b7,#3aa0ff,#a78bfa,#ff5f6d);"></div>
+          <div class="name">Sheen</div>
         </div>
         <div class="style-swatch" data-pattern="starburst">
           <div class="chip" style="background:conic-gradient(from 0deg,#ff5f6d,#ffc371,#47cf73,#3aa0ff,#c86dfa,#ff5f6d);"></div>
@@ -718,11 +725,28 @@
           <div class="chip" style="background:linear-gradient(60deg,#dfefff,#9ad4ff 40%,#fff 55%,#7fb8e6);"></div>
           <div class="name">Cracked Ice</div>
         </div>
+        <div class="style-swatch" data-pattern="tessellate">
+          <div class="chip" style="background:repeating-linear-gradient(45deg,transparent 0 4px,rgba(255,255,255,.4) 4px 5px),repeating-linear-gradient(-45deg,transparent 0 4px,rgba(255,255,255,.4) 4px 5px),linear-gradient(135deg,#ff5f6d,#3aa0ff,#c86dfa);"></div>
+          <div class="name">Tessellate</div>
+        </div>
+        <div class="style-swatch" data-pattern="grid">
+          <div class="chip" style="background:repeating-linear-gradient(0deg,transparent 0 4px,rgba(255,255,255,.45) 4px 5px),repeating-linear-gradient(90deg,transparent 0 4px,rgba(255,255,255,.45) 4px 5px),linear-gradient(135deg,#47cf73,#3aa0ff,#c86dfa);"></div>
+          <div class="name">Grid</div>
+        </div>
+        <div class="style-swatch" data-pattern="snow">
+          <div class="chip" style="background:radial-gradient(circle,#fff 1px,transparent 1.6px) 0 0/7px 7px,linear-gradient(135deg,#ff5f6d,#3aa0ff,#c86dfa);"></div>
+          <div class="name">Snow</div>
+        </div>
+        <div class="style-swatch" data-pattern="matrix">
+          <div class="chip" style="background:repeating-linear-gradient(90deg,transparent 0 3px,rgba(120,255,170,.85) 3px 4px,transparent 4px 7px),linear-gradient(180deg,#0b3,#083);"></div>
+          <div class="name">Matrix</div>
+        </div>
       </div>
 
       <div class="opacity-row">
         <label>Intensity</label>
         <input type="range" id="foilOpacity" min="0" max="100" value="85">
+        <div class="num-px"><input type="number" id="foilOpacityNum" min="0" max="100" step="1" value="85"><span>%</span></div>
       </div>
       <div class="opacity-row">
         <label>Corners</label>
@@ -744,7 +768,7 @@
         </div>
         <div class="field">
           <label>Series</label>
-          <input type="number" id="metaSeries" min="1" max="99" step="1" placeholder="1">
+          <input type="number" id="metaSeries" min="1" max="99" step="any" placeholder="1">
         </div>
       </div>
       <div class="field-row">
@@ -784,7 +808,24 @@
       <div class="field-row">
         <div class="field">
           <label>Team</label>
-          <input type="text" id="metaTeam" placeholder="Seattle Mariners">
+          <input type="text" id="metaTeam" list="teamList" placeholder="Seattle Mariners">
+          <datalist id="teamList">
+            <option>Arizona Diamondbacks</option><option>Atlanta Braves</option>
+            <option>Baltimore Orioles</option><option>Boston Red Sox</option>
+            <option>Chicago Cubs</option><option>Chicago White Sox</option>
+            <option>Cincinnati Reds</option><option>Cleveland Guardians</option>
+            <option>Colorado Rockies</option><option>Detroit Tigers</option>
+            <option>Houston Astros</option><option>Kansas City Royals</option>
+            <option>Los Angeles Angels</option><option>Los Angeles Dodgers</option>
+            <option>Miami Marlins</option><option>Milwaukee Brewers</option>
+            <option>Minnesota Twins</option><option>New York Mets</option>
+            <option>New York Yankees</option><option>Oakland Athletics</option>
+            <option>Philadelphia Phillies</option><option>Pittsburgh Pirates</option>
+            <option>San Diego Padres</option><option>San Francisco Giants</option>
+            <option>Seattle Mariners</option><option>St. Louis Cardinals</option>
+            <option>Tampa Bay Rays</option><option>Texas Rangers</option>
+            <option>Toronto Blue Jays</option><option>Washington Nationals</option>
+          </datalist>
         </div>
         <div class="field">
           <label>Category</label>
@@ -912,7 +953,16 @@
       <div class="eyebrow">Vitrine — Collection</div>
       <h2 id="galleryTitle">Your Cards</h2>
     </div>
-    <input type="text" class="gallery-search" id="gallerySearch" placeholder="Search name, team, brand…">
+    <div class="gallery-controls">
+      <label class="sort-label">Sort
+        <select class="gallery-sort" id="gallerySort">
+          <option value="chrono">Year → Series → Card #</option>
+          <option value="name">Name (A–Z)</option>
+          <option value="updated">Recently updated</option>
+        </select>
+      </label>
+      <input type="text" class="gallery-search" id="gallerySearch" placeholder="Search name, team, brand…">
+    </div>
   </div>
   <div class="gallery-grid" id="galleryGrid"></div>
 </div>
@@ -924,7 +974,7 @@
   // ---------------- State ----------------
   const state = {
     coating: 'matte',       // matte | foil | holographic | gold-chrome
-    pattern: 'crackle',     // refractive texture used by non-matte coatings
+    pattern: 'sheen',       // refractive texture used by non-matte coatings
     foilOpacity: 0.85,      // finish intensity
     bezel: 16,              // corner radius in px (match a card series)
     aspect: 5/7,            // card width / height (from the front image)
@@ -1167,11 +1217,44 @@
         bg = `url(${crackleTextureURL})`;
         size = '120% 120%'; pos = `${50 + px*15}% ${50 + py*15}%`;
         break;
-      case 'crackle':
-      default:
-        bg = `url(${crackleTextureURL})`;
-        size = '160% 160%'; pos = `${40 + px*20}% ${40 + py*20}%`;
+      case 'tessellate': {
+        const off = (px*24).toFixed(1);
+        bg = `repeating-linear-gradient(45deg,transparent 0 10px,rgba(255,255,255,0.55) 10px 12px),`
+           + `repeating-linear-gradient(-45deg,transparent 0 10px,rgba(255,255,255,0.55) 10px 12px),`
+           + `linear-gradient(${angle}deg,#ff5f6d,#ffc371,#47cf73,#3aa0ff,#c86dfa,#ff5f6d)`;
+        size = 'auto,auto,240% 240%'; pos = `${off}px 0,${off}px 0,center`;
         break;
+      }
+      case 'grid': {
+        const off = (px*24).toFixed(1);
+        bg = `repeating-linear-gradient(0deg,transparent 0 11px,rgba(255,255,255,0.5) 11px 13px),`
+           + `repeating-linear-gradient(90deg,transparent 0 11px,rgba(255,255,255,0.5) 11px 13px),`
+           + `linear-gradient(${angle}deg,#47cf73,#3aa0ff,#6d5ffa,#c86dfa,#47cf73)`;
+        size = 'auto,auto,240% 240%'; pos = `0 ${off}px,${off}px 0,center`;
+        break;
+      }
+      case 'snow': {
+        const ox = (px*26).toFixed(1), oy = (py*26).toFixed(1);
+        bg = `radial-gradient(circle,#ffffff 1.2px,transparent 2px),`
+           + `radial-gradient(circle,#ffffff 0.8px,transparent 1.7px),`
+           + `linear-gradient(${angle}deg,#ff5f6d,#3aa0ff,#c86dfa,#ff5f6d)`;
+        size = '16px 16px,9px 9px,240% 240%'; pos = `${ox}px ${oy}px,${-ox}px ${oy}px,center`;
+        break;
+      }
+      case 'matrix': {
+        const oy = (py*40 + ry*4).toFixed(1);
+        bg = `repeating-linear-gradient(90deg,transparent 0 6px,rgba(120,255,170,0.9) 6px 8px,transparent 8px 14px),`
+           + `linear-gradient(180deg,#0f3 0%,#3aa0ff 55%,#0f3 100%)`;
+        size = 'auto,100% 240%'; pos = `0 0,0 ${oy}px`;
+        break;
+      }
+      case 'sheen':
+      default: {
+        const s = px*30 + ry*3;
+        bg = `linear-gradient(${110 + rx*0.8}deg,#ff5f6d ${s}%,#ffd36e ${s+10}%,#ffffff ${s+18}%,#6ee7b7 ${s+26}%,#3aa0ff ${s+36}%,#a78bfa ${s+48}%,#ff5f6d ${s+60}%)`;
+        size = '250% 250%'; pos = 'center';
+        break;
+      }
     }
 
     // Coating tints the same pattern differently.
@@ -1214,10 +1297,11 @@
     el.addEventListener('click', ()=> setPattern(el.dataset.pattern));
   });
 
-  // Intensity slider
-  document.getElementById('foilOpacity').addEventListener('input', (e)=>{
-    state.foilOpacity = e.target.value/100;
-    foilLayer.style.opacity = effectiveOpacity();
+  // Intensity slider + number box (both 0–100 %), kept in sync
+  document.getElementById('foilOpacity').addEventListener('input', (e)=> setFoilOpacity(Number(e.target.value)/100));
+  document.getElementById('foilOpacityNum').addEventListener('input', (e)=>{
+    const pct = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+    setFoilOpacity(pct/100);
   });
 
   // Corner bezel slider
@@ -1345,7 +1429,9 @@
   }
   function setFoilOpacity(val){
     state.foilOpacity = val;
-    document.getElementById('foilOpacity').value = Math.round(val*100);
+    const pct = Math.round(val*100);
+    document.getElementById('foilOpacity').value = pct;
+    document.getElementById('foilOpacityNum').value = pct;
     foilLayer.style.opacity = effectiveOpacity();
   }
 
@@ -1531,8 +1617,9 @@
       cardName: c.cardName != null ? c.cardName : (c.name || ''),
       cardNumber: c.cardNumber != null ? c.cardNumber : (c.cardNo || ''),
       cardSet: c.cardSet || '',
-      // Series is numeric now; pull the number out of legacy strings like "Series 1".
-      series: (String(c.series == null ? '' : c.series).match(/\d+/) || [''])[0],
+      // Series is numeric (decimals allowed, e.g. 1.5); pull the number out of legacy
+      // strings like "Series 1".
+      series: (String(c.series == null ? '' : c.series).match(/\d+(?:\.\d+)?/) || [''])[0],
       type: c.type || '',
       category: c.category || '',
       brand: c.brand || '',
@@ -1544,7 +1631,8 @@
       pitcherStats: c.pitcherStats || '',
       showBatter: !!c.showBatter,
       showPitcher: !!c.showPitcher,
-      pattern: c.pattern || c.foilStyle || 'crackle',
+      // crackle was replaced by 'sheen'; map any legacy value forward.
+      pattern: (()=>{ const p = c.pattern || c.foilStyle; return (!p || p === 'crackle') ? 'sheen' : p; })(),
       // Old cards carried a foil style but no coating concept — show them shiny.
       coating: c.coating || (c.foilStyle ? 'holographic' : 'matte'),
     };
@@ -1602,8 +1690,8 @@
     showPitcher.checked = !!card.showPitcher;
     refreshMeta();
     setCoating(card.coating || 'matte');
-    setPattern(card.pattern || 'crackle');
-    setBezel(typeof card.bezel === 'number' ? card.bezel : 34);
+    setPattern(card.pattern || 'sheen');
+    setBezel(typeof card.bezel === 'number' ? card.bezel : 16);
     applyAspect(card.aspect || (5/7));
     setFront(card.front || null);
     setBack(card.back || null);
@@ -1612,11 +1700,16 @@
     resetView();
     state.flipped = false;
   }
-  // Card numbers follow the series ranges: series 1 = #001–#300, series 2 = #301–#600, …
-  // A random unused number in that range is picked (not the next sequential one).
-  function randomCardNumber(series){
+  // Valid card-number range for a card. Normally by series (1 = #001–#300, 2 = #301–#600,
+  // …), but an "All-Star" set is always numbered #001–#068.
+  function cardNumberRange(series, set){
+    if ((set || '').toLowerCase().replace(/[^a-z]/g, '') === 'allstar') return [1, 68];
     const s = Math.max(1, parseInt(series) || 1);
-    const start = (s - 1) * 300 + 1, end = s * 300;
+    return [(s - 1) * 300 + 1, s * 300];
+  }
+  // A random UNUSED number in that range (not the next sequential one).
+  function randomCardNumber(){
+    const [start, end] = cardNumberRange(metaFields.series.value, metaFields.cardSet.value);
     const used = new Set(
       allCards.filter(c => c.id !== currentId)
         .map(c => parseInt(String(c.cardNumber || '').replace(/\D/g, '')))
@@ -1627,12 +1720,20 @@
     const pick = free.length ? free[Math.floor(Math.random() * free.length)] : start;
     return '#' + String(pick).padStart(3, '0');
   }
+  function currentNumberInRange(){
+    const n = parseInt(String(metaFields.cardNumber.value || '').replace(/\D/g, ''));
+    if (isNaN(n)) return false;
+    const [start, end] = cardNumberRange(metaFields.series.value, metaFields.cardSet.value);
+    return n >= start && n <= end;
+  }
   function randomizeNumber(){
-    metaFields.cardNumber.value = randomCardNumber(metaFields.series.value);
+    metaFields.cardNumber.value = randomCardNumber();
     refreshMeta();
   }
-  // Reroll the number when the series changes; manual override still allowed.
+  // Reroll on series change, and when the set change (e.g. → All-Star) puts the number
+  // out of range; the Random button always rerolls. Manual edits otherwise stick.
   metaFields.series.addEventListener('input', randomizeNumber);
+  metaFields.cardSet.addEventListener('change', ()=>{ if (!currentNumberInRange()) randomizeNumber(); });
   document.getElementById('autoNumBtn').addEventListener('click', randomizeNumber);
 
   function newCard(){
@@ -1640,7 +1741,7 @@
     metaFields.brand.value = 'Topps';
     metaFields.year.value = String(Math.max(2026, new Date().getFullYear()));
     metaFields.series.value = '1';
-    metaFields.cardNumber.value = randomCardNumber(1);
+    metaFields.cardNumber.value = randomCardNumber();
     refreshMeta();
     showEditor();
   }
@@ -1759,12 +1860,32 @@
     allCards.sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0));
     drawGallery();
   }
+  // For chronological sorting: parse a number out of a field; empties sort last.
+  const sortNum = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isNaN(n) ? Infinity : n; };
+  function sortCards(list, mode){
+    const arr = [...list];
+    const name = c => (c.cardName || c.name || '');
+    if (mode === 'name'){
+      arr.sort((a,b)=> name(a).localeCompare(name(b), undefined, { sensitivity: 'base' }));
+    } else if (mode === 'updated'){
+      arr.sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0));
+    } else { // 'chrono' — year, then series, then card number
+      arr.sort((a,b)=>
+        (sortNum(a.year) - sortNum(b.year)) ||
+        (sortNum(a.series) - sortNum(b.series)) ||
+        (sortNum(a.cardNumber) - sortNum(b.cardNumber)) ||
+        name(a).localeCompare(name(b)));
+    }
+    return arr;
+  }
+
   function drawGallery(){
     const grid = document.getElementById('galleryGrid');
     const q = (document.getElementById('gallerySearch').value || '').trim().toLowerCase();
-    const cards = q
+    const filtered = q
       ? allCards.filter(c => `${c.cardName||c.name||''} ${c.team||''} ${c.brand||''} ${c.series||''} ${c.cardSet||''} ${c.year||''} ${c.type||''} ${c.category||''} ${c.position||''}`.toLowerCase().includes(q))
       : allCards;
+    const cards = sortCards(filtered, document.getElementById('gallerySort').value);
     document.getElementById('galleryTitle').textContent = allCards.length ? `Your Cards (${allCards.length})` : 'Your Cards';
     if (!cards.length){
       grid.innerHTML = `<div class="gallery-empty" style="grid-column:1/-1">
@@ -1954,6 +2075,7 @@
     const f = e.target.files[0]; if (f) importFile(f); e.target.value = '';
   });
   document.getElementById('gallerySearch').addEventListener('input', drawGallery);
+  document.getElementById('gallerySort').addEventListener('change', drawGallery);
 
   // ---------------- Init ----------------
   async function init(){
