@@ -20,4 +20,4 @@ if %errorlevel%==0 (
 
 start "Vitrine server - keep this window open while using the app" cmd /k %PYCMD% -m http.server 8123
 timeout /t 2 /nobreak >nul
-start "" http://localhost:8123/card-viewer.html
+start "" http://localhost:8123/index.html
