@@ -26,8 +26,8 @@
       "foilOpacity": 0.85,
       "bezel": 16,
       "aspect": 0.6708860759493671,
-      "front": "lazaro-montes-front.jpg",
-      "back": "lazaro-montes-back.jpg",
+      "front": "2029 all star lmontes1.jpg",
+      "back": "2029 all star lmontes2.jpg",
       "mask": null
     },
     {
@@ -53,8 +53,8 @@
       "foilOpacity": 0.85,
       "bezel": 16,
       "aspect": 0.6708860759493671,
-      "front": "julio-rodriguez-front.jpg",
-      "back": "julio-rodriguez-back.jpg",
+      "front": "2029 all star jrod1.jpg",
+      "back": "2029 all star jrod2.jpg",
       "mask": null
     },
     {
@@ -80,8 +80,8 @@
       "foilOpacity": 0.85,
       "bezel": 16,
       "aspect": 0.6708860759493671,
-      "front": "freddy-gonzalez-front.jpg",
-      "back": "freddy-gonzalez-back.jpg",
+      "front": "2029 all star fgonz1.jpg",
+      "back": "2029 all star fgonz2.jpg",
       "mask": null
     },
     {
@@ -107,8 +107,8 @@
       "foilOpacity": 0.1,
       "bezel": 16,
       "aspect": 0.6708860759493671,
-      "front": "bryan-woo-front.jpg",
-      "back": "bryan-woo-back.jpg",
+      "front": "2029 all star bwoo.jpg",
+      "back": "2029 all star bwoo2.jpg",
       "mask": null
     },
     {
@@ -134,8 +134,8 @@
       "foilOpacity": 0.23,
       "bezel": 16,
       "aspect": 0.6708860759493671,
-      "front": "cal-raleigh-front.jpg",
-      "back": "cal-raleigh-back.jpg",
+      "front": "2029 all star calral1.jpg",
+      "back": "2029 all star calral2.jpg",
       "mask": null
     },
     {
@@ -161,7 +161,7 @@
       "foilOpacity": 0.85,
       "bezel": 18,
       "aspect": 0.6723348593852191,
-      "front": "cal-raleigh-gold-glove-front.png",
+      "front": "2028 S3 Gold Glove Catcher.jpg",
       "back": null,
       "mask": null
     },
@@ -188,7 +188,7 @@
       "foilOpacity": 0.85,
       "bezel": 5,
       "aspect": 0.7105263157894737,
-      "front": "julio-rodriguez-front-1.jpg",
+      "front": "2028 mvp jrod1.jpg",
       "back": null,
       "mask": null
     },
@@ -215,8 +215,8 @@
       "foilOpacity": 0.85,
       "bezel": 34,
       "aspect": 0.6706349206349206,
-      "front": "takuho-otani-front.jpg",
-      "back": "takuho-otani-back.jpg",
+      "front": "2028 all star TakOta1.jpg",
+      "back": "2028 all star TakOta2.jpg",
       "mask": null
     },
     {
@@ -242,8 +242,8 @@
       "foilOpacity": 0.85,
       "bezel": 10,
       "aspect": 0.6706349206349206,
-      "front": "freddy-gonzalez-front-1.jpg",
-      "back": "freddy-gonzalez-back-1.jpg",
+      "front": "2028 all star FreGon.jpg",
+      "back": "2028 all star FreGon2.jpg",
       "mask": null
     },
     {
@@ -269,8 +269,8 @@
       "foilOpacity": 0.85,
       "bezel": 10,
       "aspect": 0.6706349206349206,
-      "front": "bryan-woo-front-1.jpg",
-      "back": "bryan-woo-back-1.jpg",
+      "front": "2028 all star BryWoo1.jpg",
+      "back": "2028 all star BryWoo2.jpg",
       "mask": null
     },
     {
@@ -296,8 +296,8 @@
       "foilOpacity": 0.85,
       "bezel": 10,
       "aspect": 0.6706349206349206,
-      "front": "julio-rodriguez-front-2.jpg",
-      "back": "julio-rodriguez-back-1.jpg",
+      "front": "2028 all star Jrod.jpg",
+      "back": "2028 all star Jrod2.jpg",
       "mask": null
     },
     {
@@ -323,8 +323,8 @@
       "foilOpacity": 0.85,
       "bezel": 10,
       "aspect": 0.6706349206349206,
-      "front": "cal-raleigh-front-1.jpg",
-      "back": "cal-raleigh-back-1.jpg",
+      "front": "2028 all star CalRal.jpg",
+      "back": "2028 all star CalRa2.jpg",
       "mask": null
     },
     {
@@ -350,9 +350,9 @@
       "foilOpacity": 0.94,
       "bezel": 34,
       "aspect": 0.6708860759493671,
-      "front": "julio-rodriguez-front-3.jpg",
-      "back": "julio-rodriguez-back-2.jpg",
-      "mask": "julio-rodriguez-mask.png"
+      "front": "2027 all star jrod1.jpg",
+      "back": "2027 all star jrod2.jpg",
+      "mask": "2027 all star mask.png"
     },
     {
       "id": "c_mrjmufjxyxie1",
@@ -377,9 +377,9 @@
       "foilOpacity": 0.94,
       "bezel": 34,
       "aspect": 0.6708860759493671,
-      "front": "cal-raleigh-front-2.jpg",
+      "front": "2027 all star calral1.jpg",
       "back": null,
-      "mask": "cal-raleigh-mask.png"
+      "mask": "2027 all star mask.png"
     },
     {
       "id": "c_mrjmxfhpfr88l",
@@ -404,9 +404,9 @@
       "foilOpacity": 0.94,
       "bezel": 34,
       "aspect": 0.6708860759493671,
-      "front": "josh-naylor-front.jpg",
-      "back": "josh-naylor-back.jpg",
-      "mask": "josh-naylor-mask.png"
+      "front": "2027 all star jnaylor1.jpg",
+      "back": "2027 all star jnaylor2.jpg",
+      "mask": "2027 all star mask.png"
     },
     {
       "id": "card-2027-s3-gold-glove-cf",
@@ -431,7 +431,7 @@
       "foilOpacity": 0.85,
       "bezel": 18,
       "aspect": 0.6708033964728936,
-      "front": "2027 S3 Gold Glove CF.png",
+      "front": "2027 S3 Gold Glove CF.jpg",
       "back": null,
       "mask": null
     },
@@ -458,7 +458,7 @@
       "foilOpacity": 0.85,
       "bezel": 18,
       "aspect": 0.6681877444589309,
-      "front": "2027 S3 Gold Glove Pitcher.png",
+      "front": "2027 S3 Gold Glove Pitcher.jpg",
       "back": null,
       "mask": null
     },
@@ -485,7 +485,7 @@
       "foilOpacity": 0.85,
       "bezel": 18,
       "aspect": 0.6697127937336814,
-      "front": "2027 S3 Gold Glove Catcher.png",
+      "front": "2027 S3 Gold Glove Catcher.jpg",
       "back": null,
       "mask": null
     },

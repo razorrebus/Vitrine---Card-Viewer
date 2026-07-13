@@ -986,6 +986,10 @@
     frontURL: null,
     backURL: null,
     maskURL: null,
+    // Original uploaded filenames, so Pack can keep the real names for inline images.
+    frontName: null,
+    backName: null,
+    maskName: null,
   };
 
   const cardStage = document.getElementById('cardStage');
@@ -1372,6 +1376,7 @@
 
   function setFront(ref){
     state.frontURL = ref || null;
+    if (!ref) state.frontName = null;
     const src = resolveSrc(ref);
     if (src){
       frontImg.onload = ()=>{
@@ -1393,6 +1398,7 @@
   }
   function setBack(ref){
     state.backURL = ref || null;
+    if (!ref) state.backName = null;
     const src = resolveSrc(ref);
     if (src){
       backImg.src = src;
@@ -1408,6 +1414,7 @@
   }
   function setMask(ref){
     state.maskURL = ref || null;
+    if (!ref) state.maskName = null;
     const url = resolveSrc(ref);
     if (url){
       // Alpha mask: opaque areas of the PNG show foil, transparent areas stay matte.
@@ -1439,16 +1446,19 @@
     const file = e.target.files[0];
     if (!file) return;
     setFront(await readFileAsDataURL(file));
+    state.frontName = file.name;   // remember the real filename for Pack
   });
   document.getElementById('backInput').addEventListener('change', async (e)=>{
     const file = e.target.files[0];
     if (!file) return;
     setBack(await readFileAsDataURL(file));
+    state.backName = file.name;
   });
   document.getElementById('maskInput').addEventListener('change', async (e)=>{
     const file = e.target.files[0];
     if (!file) return;
     setMask(await readFileAsDataURL(file));
+    state.maskName = file.name;
   });
 
   // ---------------- Metadata ----------------
@@ -1666,6 +1676,9 @@
       front: state.frontURL,
       back: state.backURL,
       mask: state.maskURL,
+      frontName: state.frontName || undefined,
+      backName: state.backName || undefined,
+      maskName: state.maskName || undefined,
     };
   }
   function applyCard(card){
@@ -1696,6 +1709,10 @@
     setFront(card.front || null);
     setBack(card.back || null);
     setMask(card.mask || null);
+    // Restore remembered upload filenames (setters cleared them above if empty).
+    state.frontName = card.frontName || null;
+    state.backName = card.backName || null;
+    state.maskName = card.maskName || null;
     setFoilOpacity(typeof card.foilOpacity === 'number' ? card.foilOpacity : 0.85);
     resetView();
     state.flipped = false;
@@ -2001,12 +2018,13 @@
       while (used.has(name)) name = `${stem}-${i++}${ext}`;
       used.add(name); return name;
     };
-    async function fileFor(ref, card, kind){
+    async function fileFor(ref, card, kind, origName){
       if (!ref) return null;
       try {
         if (ref.startsWith('data:')){
           const { bytes, mime } = dataURLtoBytes(ref);
-          const base = `${slug(card.cardName || card.name) || card.id}-${kind}.${EXT[mime] || 'png'}`;
+          // Prefer the real filename the user uploaded; fall back to a name-based slug.
+          const base = origName || `${slug(card.cardName || card.name) || card.id}-${kind}.${EXT[mime] || 'png'}`;
           const name = uniq(base);
           files.push({ name: CARDS_DIR + name, data: bytes });
           return name;
@@ -2022,9 +2040,9 @@
     }
     for (const raw of allCards){
       const c = normalizeCard(raw);
-      const front = await fileFor(raw.front, c, 'front');
-      const back  = await fileFor(raw.back,  c, 'back');
-      const mask  = await fileFor(raw.mask,  c, 'mask');
+      const front = await fileFor(raw.front, c, 'front', c.frontName);
+      const back  = await fileFor(raw.back,  c, 'back',  c.backName);
+      const mask  = await fileFor(raw.mask,  c, 'mask',  c.maskName);
       manifest.cards.push({
         id: c.id, cardName: c.cardName||'', year: c.year||'', cardNumber: c.cardNumber||'',
         series: c.series||'', cardSet: c.cardSet||'', brand: c.brand||'', type: c.type||'',
