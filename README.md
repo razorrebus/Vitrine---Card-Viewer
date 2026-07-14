@@ -2,39 +2,21 @@
 
 A 3D baseball-card viewer and collection browser. The whole viewer is one file,
 `index.html`; the cards themselves live as image files in the `cards/` folder
-plus one or more manifest files (`cards.json`, `cards2027.json`, `cards2028.json`, ...).
+plus one or more manifest files (`cards.json`, `cards2027.json`, ...).
 
 ```
 Vitrine/
 ├── index.html            the app (open this)
-├── cards/
-│   ├── index.json        auto-generated: which manifest files exist
-│   ├── cards2027.json     manifest for the 2027 cards
-│   ├── cards2028.json     manifest for the 2028 cards (once you add some)
-│   ├── original-card.png
-│   └── 2027 S1 AntVol.jpg ...your card images
-└── tools/
-    └── build-manifest.mjs  helper for the "drop images in a folder" workflow
+└── cards/
+    ├── index.json        lists which manifest files exist
+    ├── cards.json         a manifest: card details + which image each card uses
+    ├── cards2027.json     (optional) more manifests, all merged together
+    └── 2027 S1 AntVol.jpg ...your card images
 ```
 
-### Manifests split by year — automatic
-Cards are organized into one manifest file per year, and **the generator sorts them for
-you based on the filename**. Drop an image whose name contains a year (any `19xx` or
-`20xx`) into `cards/` and run the generator with no arguments:
-```
-node tools/build-manifest.mjs
-```
-- `2028 S1 Whoever.jpg` → filed into `cards2028.json` (created automatically if new)
-- `1998 Griffey.png`    → filed into `cards1998.json`
-- a name with no year   → filed into the default `cards.json`
-
-A card already listed in a manifest **stays in that file** (it's never moved), and any
-details you've filled in are preserved on re-runs. The app reads `cards/index.json` —
-the list of manifest files, which the generator regenerates every run — and merges them
-all into one collection.
-
-> Want to force everything into a specific file regardless of year? Pass it explicitly:
-> `node tools/build-manifest.mjs cards-inserts.json`.
+The app reads `cards/index.json` (the list of manifest files), loads every manifest it
+names, and merges them into one collection — so you can split cards across several files
+or keep everything in a single `cards.json`, whichever you prefer.
 
 ## Running it
 
@@ -56,39 +38,19 @@ then open <http://localhost:8123/>. (Any static server works.)
 
 On your phone: publish to GitHub Pages (below) and open the URL there.
 
-## Adding cards — two ways
-
-### A. Drop images in the folder, then generate the manifest
-1. Put image files into `cards/`. Filename conventions (case-insensitive):
-   - `julio-rodriguez.png` → the **front** of a card named "Julio Rodriguez"
-   - `julio-rodriguez-back.png` → its **back** image (optional)
-   - `julio-rodriguez-mask.png` → a grayscale **foil mask** (optional)
-   Supported types: `.png .jpg .jpeg .webp .gif`
-2. Run the generator (needs Node.js), naming a manifest if you want to split by group:
-   ```
-   node tools/build-manifest.mjs                  (writes cards.json)
-   node tools/build-manifest.mjs cards2028.json    (writes cards2028.json)
-   ```
-   It adds an entry for each new image and **keeps details you've already filled in**.
-3. Open the manifest it printed and fill in team / year / brand / etc. for the new cards.
-
-### B. Build cards in the app, then "Pack"
-1. Open the app, hit **New**, upload art, fill in the details, choose a foil style.
-   Click **Save** — it's stored locally in your browser.
+## Adding cards
+1. Open the app, hit **New**, upload the artwork, fill in the details, and choose a
+   finish. Click **Save** — the card is stored locally in your browser.
 2. When you're ready to publish, click **Pack**. It downloads `vitrine-cards.zip`
    containing a complete `cards/` folder (all images + a fresh `cards.json`).
-3. Unzip it into this project folder (overwriting `cards/`), then commit.
+3. Unzip it into this project folder (overwriting `cards/`), then commit and push.
 
-You can mix both: locally-saved cards and folder cards show up together, and **Pack**
-bundles everything into one publishable folder.
-
-> **Note:** Pack always consolidates everything into a single `cards.json` — it
-> doesn't know which year-specific manifest a card "belongs" in. If you're using split
-> manifests (option A), treat Pack as an occasional full-collection export rather than
-> your everyday workflow, or re-split the packed `cards.json` back out afterward.
-
-> Cards you add in the app (option B) live in that browser only until you Pack them.
-> Cards in `cards/cards.json` (option A) are the published set everyone sees.
+> Cards you add in the app live in that browser until you Pack them. The files in
+> `cards/` (images + manifests) are the published set everyone sees.
+>
+> Pack consolidates everything into a single `cards.json`. If you keep separate per-year
+> manifests, treat Pack as a full-collection export — the app still loads any extra
+> `cards*.json` alongside it and de-duplicates by card id.
 
 ## Publishing to GitHub Pages
 1. Create a repo and push this folder to it.
