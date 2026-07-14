@@ -999,6 +999,7 @@
           <option value="updated">Recently updated</option>
         </select>
       </label>
+<<<<<<< HEAD
       <label class="sort-label">Year
         <select class="gallery-sort" id="filterYear"><option value="">All</option></select>
       </label>
@@ -1008,6 +1009,8 @@
       <label class="sort-label">Set
         <select class="gallery-sort" id="filterSet"><option value="">All</option></select>
       </label>
+=======
+>>>>>>> 0e56aa6f168a711effea932d011304d30c3350df
       <input type="text" class="gallery-search" id="gallerySearch" placeholder="Search name, team, brand…">
     </div>
   </div>
@@ -1970,6 +1973,7 @@
     currentPage = 0;
     drawGallery();
   }
+<<<<<<< HEAD
 
   // Fill the Year / Series / Set filter dropdowns from the values actually present.
   function populateFilters(){
@@ -1985,6 +1989,8 @@
     fill('filterSet',    distinct('cardSet').sort((a,b)=> a.localeCompare(b)));
   }
 
+=======
+>>>>>>> 0e56aa6f168a711effea932d011304d30c3350df
   // For chronological sorting: parse a number out of a field; empties sort last.
   const sortNum = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isNaN(n) ? Infinity : n; };
   function sortCards(list, mode){
@@ -2007,6 +2013,7 @@
   function drawGallery(){
     const grid = document.getElementById('galleryGrid');
     const q = (document.getElementById('gallerySearch').value || '').trim().toLowerCase();
+<<<<<<< HEAD
     const fYear = document.getElementById('filterYear').value;
     const fSeries = document.getElementById('filterSeries').value;
     const fSet = document.getElementById('filterSet').value;
@@ -2027,6 +2034,14 @@
       : (total === allCards.length ? `Your Cards (${total})` : `Your Cards (${total} of ${allCards.length})`);
 
     if (!total){
+=======
+    const filtered = q
+      ? allCards.filter(c => `${c.cardName||c.name||''} ${c.team||''} ${c.brand||''} ${c.series||''} ${c.cardSet||''} ${c.year||''} ${c.type||''} ${c.category||''} ${c.position||''}`.toLowerCase().includes(q))
+      : allCards;
+    const cards = sortCards(filtered, document.getElementById('gallerySort').value);
+    document.getElementById('galleryTitle').textContent = allCards.length ? `Your Cards (${allCards.length})` : 'Your Cards';
+    if (!cards.length){
+>>>>>>> 0e56aa6f168a711effea932d011304d30c3350df
       grid.innerHTML = `<div class="gallery-empty" style="grid-column:1/-1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>
         <div>${allCards.length ? 'No cards match your filters.' : 'No cards yet. Hit “New” to create one.'}</div>
@@ -2224,9 +2239,14 @@
   document.getElementById('importInput').addEventListener('change', (e)=>{
     const f = e.target.files[0]; if (f) importFile(f); e.target.value = '';
   });
+<<<<<<< HEAD
   document.getElementById('gallerySearch').addEventListener('input', ()=>{ currentPage = 0; drawGallery(); });
   ['gallerySort','filterYear','filterSeries','filterSet'].forEach(id =>
     document.getElementById(id).addEventListener('change', ()=>{ currentPage = 0; drawGallery(); }));
+=======
+  document.getElementById('gallerySearch').addEventListener('input', drawGallery);
+  document.getElementById('gallerySort').addEventListener('change', drawGallery);
+>>>>>>> 0e56aa6f168a711effea932d011304d30c3350df
 
   // ---------------- Init ----------------
   async function init(){

@@ -2,16 +2,31 @@
 
 A 3D baseball-card viewer and collection browser. The whole viewer is one file,
 `index.html`; the cards themselves live as image files in the `cards/` folder
+<<<<<<< HEAD
 plus one or more manifest files (`cards.json`, `cards2027.json`, ...).
+=======
+plus one or more manifest files (`cards.json`, `cards2027.json`, `cards2028.json`, ...).
+>>>>>>> 0e56aa6f168a711effea932d011304d30c3350df
 
 ```
 Vitrine/
 ├── index.html            the app (open this)
+<<<<<<< HEAD
 └── cards/
     ├── index.json        lists which manifest files exist
     ├── cards.json         a manifest: card details + which image each card uses
     ├── cards2027.json     (optional) more manifests, all merged together
     └── 2027 S1 AntVol.jpg ...your card images
+=======
+├── cards/
+│   ├── index.json        auto-generated: which manifest files exist
+│   ├── cards2027.json     manifest for the 2027 cards
+│   ├── cards2028.json     manifest for the 2028 cards (once you add some)
+│   ├── original-card.png
+│   └── 2027 S1 AntVol.jpg ...your card images
+└── tools/
+    └── build-manifest.mjs  helper for the "drop images in a folder" workflow
+>>>>>>> 0e56aa6f168a711effea932d011304d30c3350df
 ```
 
 The app reads `cards/index.json` (the list of manifest files), loads every manifest it
