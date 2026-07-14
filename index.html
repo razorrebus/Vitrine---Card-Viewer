@@ -257,7 +257,6 @@
     margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--hairline);
   }
   .side-section-head .eyebrow { margin: 0; }
-  .side-section-head .count { font-size: 10px; color: var(--ivory-dim); }
 
   .upload-row {
     display: grid;
@@ -266,6 +265,7 @@
     margin-bottom: 10px;
   }
   .upload-slot {
+    display: block;
     border: 1px dashed var(--hairline);
     border-radius: 4px;
     padding: 14px 10px;
@@ -279,7 +279,6 @@
   .upload-slot input { position:absolute; inset:0; opacity:0; cursor:pointer; }
   .upload-slot .label { font-size: 11px; font-weight: 600; color: var(--ivory); margin-bottom: 2px; }
   .upload-slot .sub { font-size: 9.5px; color: var(--ivory-dim); }
-  .upload-slot .thumb { width: 100%; height: 46px; object-fit: cover; border-radius: 2px; margin-bottom: 6px; opacity: 0.9; }
 
   .sub-label {
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em;
@@ -309,6 +308,12 @@
     height: 30px; border-radius: 3px; margin-bottom: 7px;
   }
   .style-swatch .name { font-size: 10px; font-weight: 600; letter-spacing: 0.02em; }
+
+  /* Patterns: all 12 on two rows (6 per row), compacted so names still fit. */
+  .pattern-grid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .pattern-grid .style-swatch { padding: 7px 3px 6px; }
+  .pattern-grid .style-swatch .chip { height: 24px; margin-bottom: 5px; }
+  .pattern-grid .style-swatch .name { font-size: 8.5px; letter-spacing: 0; line-height: 1.15; }
 
   .field { margin-bottom: 12px; }
   .field label {
@@ -451,6 +456,35 @@
   .gallery-empty { text-align: center; color: var(--ivory-dim); padding: 70px 20px; }
   .gallery-empty svg { width: 46px; height: 46px; opacity: 0.4; margin-bottom: 12px; }
 
+  /* pagination */
+  .gallery-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 30px; }
+  .gallery-pager:empty { display: none; }
+  .pager-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Inter'; font-size: 13px; font-weight: 600; color: var(--ivory);
+    background: var(--panel-2); border: 1px solid var(--hairline); border-radius: 8px;
+    padding: 8px 14px; cursor: pointer; transition: border-color 120ms, opacity 120ms;
+  }
+  .pager-btn:hover:not(:disabled) { border-color: var(--gold-soft); }
+  .pager-btn:disabled { opacity: 0.35; cursor: default; }
+  .pager-info { font-size: 12.5px; color: var(--ivory-dim); font-variant-numeric: tabular-nums; }
+
+  /* viewer prev/next arrows (only in viewer mode) */
+  .nav-arrow {
+    display: none; position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
+    width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+    align-items: center; justify-content: center;
+    background: rgba(20,23,28,0.8); border: 1px solid var(--hairline); color: var(--ivory);
+    backdrop-filter: blur(6px); transition: border-color 120ms, background 120ms, opacity 120ms;
+  }
+  body.viewer-open .nav-arrow { display: flex; }
+  .nav-arrow:hover { border-color: var(--gold-soft); background: rgba(20,23,28,0.95); }
+  .nav-arrow:disabled { opacity: 0.3; cursor: default; }
+  .nav-arrow svg { width: 22px; height: 22px; }
+  .nav-arrow.prev { left: 14px; }
+  .nav-arrow.next { right: 14px; }
+  @media (max-width: 880px) { .nav-arrow { width: 38px; height: 38px; } .nav-arrow.prev { left: 4px; } .nav-arrow.next { right: 4px; } }
+
   /* toast */
   .toast {
     position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
@@ -462,7 +496,6 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   /* ---------- FLUID CARD + MOBILE ---------- */
-  .card-stage { width: var(--card-w); height: var(--card-h); }
   @media (max-width: 560px) {
     :root { --card-w: min(300px, 74vw); --card-h: calc(min(300px, 74vw) * 1.4); }
     .stage-frame { padding: 30px 26px 22px; }
@@ -498,7 +531,6 @@
   body.viewer-open .detail-panel { display: block; }
   body.viewer-open .app { grid-template-columns: 1.5fr 0.82fr; }
   body.viewer-open #saveCardBtn, body.gallery-open #saveCardBtn { display: none; }
-  body.viewer-open .side-only, body.gallery-open .side-only { display: none; }
 
   .dp-head { margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--hairline); }
   .dp-title {
@@ -588,6 +620,12 @@
 
   <!-- VIEWER -->
   <div class="vitrine-wrap">
+    <button class="nav-arrow prev" id="navPrev" aria-label="Previous card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <button class="nav-arrow next" id="navNext" aria-label="Next card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
     <div class="vitrine-header">
       <div class="eyebrow">Vitrine — Card Viewer</div>
       <h1 class="title" id="cardTitleDisplay">Untitled Card</h1>
@@ -603,7 +641,7 @@
               <span>Upload a card face image<br>to begin</span>
             </div>
             <img class="card-art" id="frontImg" style="display:none;">
-            <div class="foil-layer no-mask" id="foilLayer"></div>
+            <div class="foil-layer" id="foilLayer"></div>
             <div class="shine-layer" id="shineLayer"></div>
             <div class="card-edge-glow"></div>
           </div>
@@ -613,7 +651,7 @@
                 <span class="brand" id="backBrand">BRAND</span>
                 <span class="yearnum" id="backYearNum">— · —</span>
               </div>
-              <div class="name-lockup" id="backName">Card Name<span class="rookie-badge" id="backRookie" style="display:none;">RC</span></div>
+              <div class="name-lockup" id="backName">Card Name</div>
               <div class="team-line" id="backTeam">Team · Position</div>
               <div class="meta-grid">
                 <div class="meta-item"><div class="k">Series</div><div class="v" id="backSeries">—</div></div>
@@ -661,7 +699,7 @@
           <div class="sub">Optional</div>
         </label>
       </div>
-      <label class="upload-slot" id="maskSlot" style="grid-column: 1 / -1;">
+      <label class="upload-slot" id="maskSlot" style="margin-top: 10px;">
         <input type="file" accept="image/*" id="maskInput">
         <div class="label">Foil mask</div>
         <div class="sub">PNG — visible areas foil, transparent areas matte</div>
@@ -691,7 +729,7 @@
         </div>
       </div>
 
-      <div class="sub-label" id="patternLabel">Pattern</div>
+      <div class="sub-label">Pattern</div>
       <div class="style-grid pattern-grid" id="patternGrid">
         <div class="style-swatch active" data-pattern="sheen">
           <div class="chip" style="background:linear-gradient(115deg,#ff5f6d,#ffd36e,#fff,#6ee7b7,#3aa0ff,#a78bfa,#ff5f6d);"></div>
@@ -756,7 +794,7 @@
     </div>
 
     <div class="side-section">
-      <div class="side-section-head"><div class="eyebrow">Card details</div><div class="count" id="metaCount"></div></div>
+      <div class="side-section-head"><div class="eyebrow">Card details</div></div>
       <div class="field">
         <label>Card name</label>
         <input type="text" id="metaCardName" placeholder="e.g. Julio Rodríguez">
@@ -961,10 +999,20 @@
           <option value="updated">Recently updated</option>
         </select>
       </label>
+      <label class="sort-label">Year
+        <select class="gallery-sort" id="filterYear"><option value="">All</option></select>
+      </label>
+      <label class="sort-label">Series
+        <select class="gallery-sort" id="filterSeries"><option value="">All</option></select>
+      </label>
+      <label class="sort-label">Set
+        <select class="gallery-sort" id="filterSet"><option value="">All</option></select>
+      </label>
       <input type="text" class="gallery-search" id="gallerySearch" placeholder="Search name, team, brand…">
     </div>
   </div>
   <div class="gallery-grid" id="galleryGrid"></div>
+  <div class="gallery-pager" id="galleryPager"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -978,9 +1026,7 @@
     foilOpacity: 0.85,      // finish intensity
     bezel: 16,              // corner radius in px (match a card series)
     aspect: 5/7,            // card width / height (from the front image)
-    hasMask: false,
     autoReturn: true,
-    flipped: false,
     zoom: 1,                // 1..MAX_ZOOM
     panX: 0, panY: 0,       // px offset when zoomed in
     frontURL: null,
@@ -1012,7 +1058,6 @@
   let curZoom = 1, curPanX = 0, curPanY = 0;
   let dragging = false, panMode = false;
   let startX = 0, startY = 0, lastX = 0, lastY = 0, moved = 0, baseRX = 0, baseRY = 0;
-  let rafId = null;
   const MIN_ZOOM = 1, MAX_ZOOM = 4, ROT_SENS = 0.6;   // degrees of rotation per pixel dragged
 
   function clampPan(){
@@ -1119,7 +1164,7 @@
     shineLayer.style.background = `radial-gradient(circle at ${(lx*100).toFixed(1)}% ${(ly*100).toFixed(1)}%, rgba(255,255,255,0.55), rgba(255,255,255,0.08) 32%, transparent 60%)`;
     updateFoilBackground(lx, ly, curRX, curRY);
 
-    rafId = requestAnimationFrame(loop);
+    requestAnimationFrame(loop);
   }
 
   function flipCard(){ targetRY += 180; }   // half-turn on the vertical axis (readable back)
@@ -1422,14 +1467,10 @@
       foilLayer.style.maskImage = `url(${url})`;
       foilLayer.style.webkitMaskMode = 'alpha';
       foilLayer.style.maskMode = 'alpha';
-      foilLayer.classList.remove('no-mask');
-      state.hasMask = true;
       document.getElementById('maskSlot').classList.add('filled');
     } else {
       foilLayer.style.webkitMaskImage = '';
       foilLayer.style.maskImage = '';
-      foilLayer.classList.add('no-mask');
-      state.hasMask = false;
       document.getElementById('maskSlot').classList.remove('filled');
     }
     foilLayer.style.opacity = effectiveOpacity();
@@ -1715,7 +1756,6 @@
     state.maskName = card.maskName || null;
     setFoilOpacity(typeof card.foilOpacity === 'number' ? card.foilOpacity : 0.85);
     resetView();
-    state.flipped = false;
   }
   // Valid card-number range for a card. Normally by series (1 = #001–#300, 2 = #301–#600,
   // …), but an "All-Star" set is always numbered #001–#068.
@@ -1775,7 +1815,9 @@
   }
 
   // ---------------- Modes: gallery / viewer / editor ----------------
-  let viewedCard = null;
+  let viewedCard = null, viewIndex = -1, sliding = false;
+  let galleryOrder = [], currentPage = 0;   // galleryOrder = full filtered+sorted list
+  const PAGE_SIZE = 24;
   function setMode(mode){
     document.body.classList.toggle('gallery-open', mode === 'gallery');
     document.body.classList.toggle('viewer-open', mode === 'viewer');
@@ -1785,11 +1827,60 @@
   function showEditor(){ setMode('editor'); applyAspect(state.aspect); }
   function showViewer(card){
     viewedCard = card;
+    viewIndex = galleryOrder.findIndex(c => c.id === card.id);
+    if (viewIndex < 0){ galleryOrder = [card]; viewIndex = 0; }
+    cardStage.style.transition = 'none';
+    cardStage.style.transform = '';
+    cardStage.style.opacity = '';
     applyCard(card);
     renderDetails(card);
     setMode('viewer');
     applyAspect(state.aspect);
+    updateNavButtons();
   }
+
+  // Prev / next through the current sorted+filtered order, with a slide.
+  function updateNavButtons(){
+    const show = galleryOrder.length > 1 ? '' : 'none';
+    document.getElementById('navPrev').style.display = show;
+    document.getElementById('navNext').style.display = show;
+  }
+  function navViewer(dir){
+    if (sliding || galleryOrder.length < 2) return;
+    let i = viewIndex + dir;
+    if (i < 0) i = galleryOrder.length - 1;         // wrap around
+    if (i >= galleryOrder.length) i = 0;
+    viewIndex = i;
+    const card = galleryOrder[i];
+    viewedCard = card;
+    sliding = true;
+    // current card slides out toward the travel direction
+    cardStage.style.transition = 'transform 150ms ease, opacity 150ms ease';
+    cardStage.style.transform = `translateX(${dir * -70}px)`;
+    cardStage.style.opacity = '0';
+    setTimeout(()=>{
+      applyCard(card);
+      renderDetails(card);
+      applyAspect(state.aspect);
+      // next card jumps to the far side, then slides into place
+      cardStage.style.transition = 'none';
+      cardStage.style.transform = `translateX(${dir * 70}px)`;
+      cardStage.style.opacity = '0';
+      void cardStage.offsetWidth;   // force reflow so the next transition runs
+      cardStage.style.transition = 'transform 180ms ease, opacity 180ms ease';
+      cardStage.style.transform = 'translateX(0)';
+      cardStage.style.opacity = '1';
+      setTimeout(()=>{ sliding = false; }, 200);
+    }, 150);
+  }
+  document.getElementById('navPrev').addEventListener('click', ()=> navViewer(-1));
+  document.getElementById('navNext').addEventListener('click', ()=> navViewer(1));
+  window.addEventListener('keydown', (e)=>{
+    if (!document.body.classList.contains('viewer-open')) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target && e.target.tagName || '')) return;
+    if (e.key === 'ArrowLeft'){ navViewer(-1); e.preventDefault(); }
+    else if (e.key === 'ArrowRight'){ navViewer(1); e.preventDefault(); }
+  });
 
   function cap(s){ return String(s||'').replace(/(^|-)([a-z])/g, (m,p,ch)=> (p ? ' ' : '') + ch.toUpperCase()); }
   function renderDetails(raw){
@@ -1875,8 +1966,25 @@
     local.forEach(c => byId.set(c.id, c));
     allCards = [...byId.values()];
     allCards.sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0));
+    populateFilters();
+    currentPage = 0;
     drawGallery();
   }
+
+  // Fill the Year / Series / Set filter dropdowns from the values actually present.
+  function populateFilters(){
+    const fill = (id, values) => {
+      const sel = document.getElementById(id), prev = sel.value;
+      sel.innerHTML = ['<option value="">All</option>']
+        .concat(values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`)).join('');
+      if (values.includes(prev)) sel.value = prev;   // keep selection if still valid
+    };
+    const distinct = key => [...new Set(allCards.map(c => (c[key] == null ? '' : String(c[key])).trim()).filter(Boolean))];
+    fill('filterYear',   distinct('year').sort((a,b)=> sortNum(a) - sortNum(b)));
+    fill('filterSeries', distinct('series').sort((a,b)=> sortNum(a) - sortNum(b)));
+    fill('filterSet',    distinct('cardSet').sort((a,b)=> a.localeCompare(b)));
+  }
+
   // For chronological sorting: parse a number out of a field; empties sort last.
   const sortNum = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isNaN(n) ? Infinity : n; };
   function sortCards(list, mode){
@@ -1899,59 +2007,83 @@
   function drawGallery(){
     const grid = document.getElementById('galleryGrid');
     const q = (document.getElementById('gallerySearch').value || '').trim().toLowerCase();
-    const filtered = q
-      ? allCards.filter(c => `${c.cardName||c.name||''} ${c.team||''} ${c.brand||''} ${c.series||''} ${c.cardSet||''} ${c.year||''} ${c.type||''} ${c.category||''} ${c.position||''}`.toLowerCase().includes(q))
-      : allCards;
-    const cards = sortCards(filtered, document.getElementById('gallerySort').value);
-    document.getElementById('galleryTitle').textContent = allCards.length ? `Your Cards (${allCards.length})` : 'Your Cards';
-    if (!cards.length){
+    const fYear = document.getElementById('filterYear').value;
+    const fSeries = document.getElementById('filterSeries').value;
+    const fSet = document.getElementById('filterSet').value;
+    const field = (c, k) => (c[k] == null ? '' : String(c[k])).trim();
+
+    let list = allCards;
+    if (q) list = list.filter(c => `${c.cardName||c.name||''} ${c.team||''} ${c.brand||''} ${c.series||''} ${c.cardSet||''} ${c.year||''} ${c.type||''} ${c.category||''} ${c.position||''}`.toLowerCase().includes(q));
+    if (fYear)   list = list.filter(c => field(c,'year') === fYear);
+    if (fSeries) list = list.filter(c => field(c,'series') === fSeries);
+    if (fSet)    list = list.filter(c => field(c,'cardSet') === fSet);
+    galleryOrder = sortCards(list, document.getElementById('gallerySort').value);
+
+    const total = galleryOrder.length;
+    const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    currentPage = Math.min(Math.max(currentPage, 0), pages - 1);
+
+    document.getElementById('galleryTitle').textContent = !allCards.length ? 'Your Cards'
+      : (total === allCards.length ? `Your Cards (${total})` : `Your Cards (${total} of ${allCards.length})`);
+
+    if (!total){
       grid.innerHTML = `<div class="gallery-empty" style="grid-column:1/-1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>
-        <div>${allCards.length ? 'No cards match your search.' : 'No cards yet. Hit “New” to create one.'}</div>
+        <div>${allCards.length ? 'No cards match your filters.' : 'No cards yet. Hit “New” to create one.'}</div>
       </div>`;
+      document.getElementById('galleryPager').innerHTML = '';
       return;
     }
     grid.innerHTML = '';
-    cards.forEach(c=>{
-      const tile = document.createElement('div');
-      tile.className = 'gcard';
-      const name = c.cardName || c.name || 'Untitled Card';
-      const sub = [c.team, c.year].filter(Boolean).join(' · ') || '—';
-      const src = resolveSrc(c.front);
-      // Tile reflects the card's real orientation when known.
-      const ar = (typeof c.aspect === 'number' && c.aspect > 0) ? `style="aspect-ratio:${c.aspect}"` : '';
-      const thumb = src
-        ? `<img class="gcard-thumb" src="${src}" alt="" loading="lazy" ${ar}>`
-        : `<div class="gcard-thumb placeholder" ${ar}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></div>`;
-      // Repo cards live in the folder/manifest — they can't be deleted from the browser.
-      const delBtn = c._origin === 'local'
-        ? `<button class="gcard-del" title="Delete card" aria-label="Delete card">
-             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-           </button>`
-        : '';
-      tile.innerHTML = `${thumb}
-        <div class="gcard-meta">
-          <div class="gcard-name">${escapeHtml(name)}</div>
-          <div class="gcard-sub">${escapeHtml(sub)}</div>
-        </div>
-        ${delBtn}`;
-      tile.addEventListener('click', (e)=>{
-        if (e.target.closest('.gcard-del')) return;
-        showViewer(c);
-      });
-      const del = tile.querySelector('.gcard-del');
-      if (del) del.addEventListener('click', async (e)=>{
-        e.stopPropagation();
-        if (!confirm(`Delete "${name}"? This can't be undone.`)) return;
-        try {
-          await dbDelete(c.id);
-          if (currentId === c.id){ currentId = null; currentCreatedAt = null; }
-          await refreshGallery();
-          toast('Card deleted');
-        } catch(err){ toast('Delete failed'); }
-      });
-      grid.appendChild(tile);
+    galleryOrder.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
+      .forEach(c => grid.appendChild(buildTile(c)));
+    renderPager(pages);
+  }
+
+  function buildTile(c){
+    const tile = document.createElement('div');
+    tile.className = 'gcard';
+    const name = c.cardName || c.name || 'Untitled Card';
+    const sub = [c.team, c.year].filter(Boolean).join(' · ') || '—';
+    const src = resolveSrc(c.front);
+    // Tile reflects the card's real orientation when known.
+    const ar = (typeof c.aspect === 'number' && c.aspect > 0) ? `style="aspect-ratio:${c.aspect}"` : '';
+    const thumb = src
+      ? `<img class="gcard-thumb" src="${src}" alt="" loading="lazy" ${ar}>`
+      : `<div class="gcard-thumb placeholder" ${ar}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></div>`;
+    // Repo cards live in the folder/manifest — they can't be deleted from the browser.
+    const delBtn = c._origin === 'local'
+      ? `<button class="gcard-del" title="Delete card" aria-label="Delete card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>`
+      : '';
+    tile.innerHTML = `${thumb}<div class="gcard-meta"><div class="gcard-name">${escapeHtml(name)}</div><div class="gcard-sub">${escapeHtml(sub)}</div></div>${delBtn}`;
+    tile.addEventListener('click', (e)=>{ if (e.target.closest('.gcard-del')) return; showViewer(c); });
+    const del = tile.querySelector('.gcard-del');
+    if (del) del.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      if (!confirm(`Delete "${name}"? This can't be undone.`)) return;
+      try {
+        await dbDelete(c.id);
+        if (currentId === c.id){ currentId = null; currentCreatedAt = null; }
+        await refreshGallery();
+        toast('Card deleted');
+      } catch(err){ toast('Delete failed'); }
     });
+    return tile;
+  }
+
+  function renderPager(pages){
+    const el = document.getElementById('galleryPager');
+    if (pages <= 1){ el.innerHTML = ''; return; }
+    el.innerHTML = '';
+    const mk = (label, disabled, delta) => {
+      const b = document.createElement('button');
+      b.className = 'pager-btn'; b.textContent = label; b.disabled = disabled;
+      b.addEventListener('click', ()=>{ currentPage += delta; drawGallery(); window.scrollTo(0,0); });
+      return b;
+    };
+    const info = document.createElement('span');
+    info.className = 'pager-info'; info.textContent = `Page ${currentPage+1} of ${pages}`;
+    el.append(mk('‹ Prev', currentPage<=0, -1), info, mk('Next ›', currentPage>=pages-1, 1));
   }
 
   // ---------------- Pack to folder (ZIP) / Import ----------------
@@ -2050,7 +2182,7 @@
         rookie: !!c.rookie, additional: c.additional||'',
         batterStats: c.batterStats||'', pitcherStats: c.pitcherStats||'',
         showBatter: !!c.showBatter, showPitcher: !!c.showPitcher,
-        coating: c.coating||'matte', pattern: c.pattern||'crackle',
+        coating: c.coating||'matte', pattern: c.pattern||'sheen',
         foilOpacity: typeof c.foilOpacity === 'number' ? c.foilOpacity : 0.85,
         bezel: typeof c.bezel === 'number' ? c.bezel : 16,
         aspect: typeof c.aspect === 'number' ? c.aspect : undefined,
@@ -2092,8 +2224,9 @@
   document.getElementById('importInput').addEventListener('change', (e)=>{
     const f = e.target.files[0]; if (f) importFile(f); e.target.value = '';
   });
-  document.getElementById('gallerySearch').addEventListener('input', drawGallery);
-  document.getElementById('gallerySort').addEventListener('change', drawGallery);
+  document.getElementById('gallerySearch').addEventListener('input', ()=>{ currentPage = 0; drawGallery(); });
+  ['gallerySort','filterYear','filterSeries','filterSet'].forEach(id =>
+    document.getElementById(id).addEventListener('change', ()=>{ currentPage = 0; drawGallery(); }));
 
   // ---------------- Init ----------------
   async function init(){
@@ -2108,8 +2241,8 @@
 
     try { db = await openDB(); } catch(e){ db = null; }
     await refreshGallery();   // pulls repo (cards.json) + local (IndexedDB) into allCards
-    if (allCards.length) showGallery();   // land on the collection; open a card into the viewer
-    else newCard();                       // empty collection → straight to a blank editor
+    if (allCards.length) setMode('gallery');   // land on the collection (already refreshed above)
+    else newCard();                            // empty collection → straight to a blank editor
     if (!db) toast('Saving is unavailable in this browser (new cards won’t persist)');
   }
 
