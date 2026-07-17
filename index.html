@@ -197,28 +197,50 @@
   .stat-table th:nth-child(2), .stat-table td:nth-child(2) { text-align: left; }
   .back-stats .stat-block { margin-top: 8px; }
 
-  /* Generated back panel */
+  /* Generated back panel — light, authentic trading-card look */
   .back-generated {
     position: absolute; inset: 0;
-    background: linear-gradient(160deg, #171a20, #0e1013 65%);
-    padding: 20px;
+    background: #f6f4ee;
+    color: #1a1a1a;
+    padding: 16px 16px 12px;
     display: flex; flex-direction: column;
     font-family: 'Inter', sans-serif;
   }
-  .back-generated .brand-row {
-    display:flex; justify-content: space-between; align-items:center;
-    border-bottom: 1px solid var(--hairline); padding-bottom: 10px; margin-bottom: 12px;
+  .back-generated .bg-top {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+    padding-bottom: 9px; margin-bottom: 10px; border-bottom: 1px solid #d9d3c6;
   }
-  .back-generated .brand { font-size: 10px; letter-spacing:0.14em; text-transform:uppercase; color: var(--gold); font-weight:700; }
-  .back-generated .yearnum { font-size: 10px; color: var(--ivory-dim); letter-spacing:0.06em; }
-  .back-generated .name-lockup { font-family:'Playfair Display', serif; font-style:italic; font-weight:700; font-size:19px; margin-bottom:2px; }
-  .back-generated .team-line { font-size:11.5px; color: var(--teal-bright); font-weight:600; letter-spacing:0.03em; margin-bottom:14px; }
-  .back-generated .meta-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 4px; }
-  .back-generated .meta-item .k { font-size:9.5px; text-transform:uppercase; letter-spacing:0.1em; color: var(--ivory-dim); margin-bottom:2px; }
-  .back-generated .meta-item .v { font-size:13px; color: var(--ivory); font-weight:600; }
-  .back-generated .footer-strip { margin-top:auto; display:flex; align-items:center; gap:8px; opacity:0.5; }
-  .back-generated .dot { width:5px; height:5px; border-radius:50%; background: var(--gold); }
-  .back-generated .footer-strip span { font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color: var(--ivory-dim); }
+  .back-generated .bg-cardno { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 22px; line-height: 1; color: #111; }
+  .back-generated .bg-series { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #7a736a; margin-top: 3px; }
+  .back-generated .bg-brand { font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #b0872f; text-align: right; }
+  /* Type hierarchy — one consistent scale used across the whole back:
+     H1 = name, H2 = team, subtitle = field/section labels, strong = values &
+     table headers, normal = table cells. */
+  .back-generated .bg-name {           /* H1 */
+    font-family: 'Arial Black', 'Inter', system-ui, sans-serif;
+    font-weight: 900; font-size: 26px; line-height: 1.0; letter-spacing: -0.015em; color: #111;
+  }
+  .back-generated .bg-team {           /* H2 */
+    font-size: 15px; font-weight: 800; text-transform: uppercase; color: #a12b2b;
+    letter-spacing: 0.02em; margin: 3px 0 9px;
+  }
+  .back-generated .bg-main { display: flex; gap: 12px; align-items: flex-start; }
+  .back-generated .bg-left { flex: 1; min-width: 0; }
+  .back-generated .bg-logo { width: 62px; height: 62px; object-fit: contain; flex-shrink: 0; }
+  .back-generated .bg-info { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px; }
+  .back-generated .lbl {               /* Subtitle */
+    font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em;
+    color: #9a9184; margin-bottom: 1px;
+  }
+  .back-generated .val { font-size: 12px; font-weight: 700; color: #1a1a1a; line-height: 1.1; }   /* Strong */
+  .back-generated .back-note { color: #4a443c; font-size: 10px; margin-top: 8px; }
+  .back-generated .stat-title { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: #9a9184; }   /* Subtitle */
+  .back-generated .stat-table th { font-size: 8px; font-weight: 700; color: #1a1a1a; border-bottom-color: #cfc9bd; }                     /* Strong */
+  .back-generated .stat-table td { font-size: 8.5px; font-weight: 500; color: #2a2620; }                                                /* normal */
+  .back-generated .bg-copyright {
+    margin-top: auto; padding-top: 8px;
+    font-size: 5.5px; line-height: 1.35; letter-spacing: 0.01em; color: #9a9388; text-transform: uppercase;
+  }
 
   .controls-row {
     display: flex; gap: 10px; margin-top: 26px; align-items: center;
@@ -647,23 +669,29 @@
           </div>
           <div class="card-face back" id="faceBack">
             <div class="back-generated" id="backGenerated">
-              <div class="brand-row">
-                <span class="brand" id="backBrand">BRAND</span>
-                <span class="yearnum" id="backYearNum">— · —</span>
+              <div class="bg-top">
+                <div>
+                  <div class="bg-cardno" id="backCardNo">#—</div>
+                  <div class="bg-series" id="backSeries"></div>
+                </div>
+                <div class="bg-brand" id="backBrand"></div>
               </div>
-              <div class="name-lockup" id="backName">Card Name</div>
-              <div class="team-line" id="backTeam">Team · Position</div>
-              <div class="meta-grid">
-                <div class="meta-item"><div class="k">Series</div><div class="v" id="backSeries">—</div></div>
-                <div class="meta-item"><div class="k">Card No.</div><div class="v" id="backCardNo">—</div></div>
-                <div class="meta-item"><div class="k">Set</div><div class="v" id="backSet">—</div></div>
-                <div class="meta-item"><div class="k">Type</div><div class="v" id="backType">—</div></div>
-                <div class="meta-item"><div class="k">Team</div><div class="v" id="backTeamCell">—</div></div>
-                <div class="meta-item"><div class="k">Category</div><div class="v" id="backCategory">—</div></div>
+              <div class="bg-main">
+                <div class="bg-left">
+                  <div class="bg-name" id="backName">Card Name</div>
+                  <div class="bg-team" id="backTeam">Team</div>
+                  <div class="bg-info">
+                    <div class="fld"><div class="lbl">Year</div><div class="val" id="backYear2">—</div></div>
+                    <div class="fld"><div class="lbl">Position</div><div class="val" id="backPos2">—</div></div>
+                    <div class="fld"><div class="lbl">Card Set</div><div class="val" id="backSetLine">—</div></div>
+                    <div class="fld"><div class="lbl">Type</div><div class="val" id="backTypeLine">—</div></div>
+                  </div>
+                </div>
+                <img class="bg-logo" id="backLogo" alt="" style="display:none;">
               </div>
-              <div class="back-stats" id="backStats"></div>
               <div class="back-note" id="backNote"></div>
-              <div class="footer-strip"><div class="dot"></div><span>Vitrine Collection</span></div>
+              <div class="back-stats" id="backStats"></div>
+              <div class="bg-copyright" id="backCopyright"></div>
             </div>
             <img class="card-art" id="backImg" style="display:none;">
           </div>
@@ -1545,31 +1573,69 @@
   const backName = document.getElementById('backName');
   const backTeam = document.getElementById('backTeam');
   const backBrand = document.getElementById('backBrand');
-  const backYearNum = document.getElementById('backYearNum');
   const backSeries = document.getElementById('backSeries');
   const backCardNo = document.getElementById('backCardNo');
-  const backSet = document.getElementById('backSet');
-  const backType = document.getElementById('backType');
-  const backTeamCell = document.getElementById('backTeamCell');
-  const backCategory = document.getElementById('backCategory');
+  const backYear2 = document.getElementById('backYear2');
+  const backPos2 = document.getElementById('backPos2');
+  const backSetLine = document.getElementById('backSetLine');
+  const backTypeLine = document.getElementById('backTypeLine');
+  const backLogo = document.getElementById('backLogo');
   const backNote = document.getElementById('backNote');
+  const backCopyright = document.getElementById('backCopyright');
+
+  // Full position names for the card back (the select stores abbreviations).
+  const POSITION_FULL = {
+    P:'Pitcher', SP:'Starting Pitcher', RP:'Relief Pitcher', C:'Catcher',
+    '1B':'First Base', '2B':'Second Base', '3B':'Third Base', SS:'Shortstop',
+    LF:'Left Field', CF:'Center Field', RF:'Right Field', OF:'Outfield',
+    IF:'Infield', DH:'Designated Hitter', UTIL:'Utility',
+  };
 
   function refreshMeta(){
     const v = k => (metaFields[k].value || '').trim();
     titleDisplay.textContent = v('cardName') || 'Untitled Card';
+    backCardNo.textContent = v('cardNumber') || '#—';
+    backSeries.textContent = v('series') ? 'Series ' + v('series') : '';
+    backBrand.textContent = (v('brand') || '').toUpperCase();
     backName.innerHTML = escapeHtml(v('cardName') || 'Card Name') + (metaRookie.checked ? ' <span class="rookie-badge">RC</span>' : '');
-    backTeam.textContent = `${v('team') || 'Team'} · ${v('position') || 'Pos'}`;
-    backBrand.textContent = (v('brand') || 'BRAND').toUpperCase();
-    backYearNum.textContent = `${v('year') || '—'} · ${v('cardNumber') || '—'}`;
-    backSeries.textContent = v('series') || '—';
-    backCardNo.textContent = v('cardNumber') || '—';
-    backSet.textContent = v('cardSet') || '—';
-    backType.textContent = v('type') || '—';
-    backTeamCell.textContent = v('team') || '—';
-    backCategory.textContent = v('category') || '—';
+    backTeam.textContent = v('team') || 'Team';
+
+    // Info block: Year · Position (full name) / Card set · Type
+    const pos = v('position');
+    backYear2.textContent = v('year') || '—';
+    backPos2.textContent = POSITION_FULL[pos] || pos || '—';
+    backSetLine.textContent = v('cardSet') || '—';
+    backTypeLine.textContent = v('type') || '—';
+
+    // Team logo from logos/<team>.png (e.g. "Seattle Mariners" → logos/seattle_mariners.png);
+    // blank if the file doesn't exist.
+    const team = v('team');
+    const logoURL = team ? 'logos/' + team.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') + '.png' : '';
+    if (backLogo.getAttribute('data-src') !== logoURL){
+      backLogo.setAttribute('data-src', logoURL);
+      backLogo.style.display = 'none';
+      if (logoURL){
+        backLogo.onload = ()=>{ backLogo.style.display = ''; };
+        backLogo.onerror = ()=>{ backLogo.style.display = 'none'; };
+        backLogo.src = logoURL;
+      } else {
+        backLogo.removeAttribute('src');
+      }
+    }
+
     const note = v('additional');
     backNote.textContent = note;
     backNote.style.display = note ? 'block' : 'none';
+
+    // Fine-print legal line, styled after a licensed card back (brand-substituted).
+    const brand = v('brand') || 'Vitrine';
+    const B = brand.toUpperCase();
+    const dom = (brand.replace(/[^a-z0-9]/gi, '').toUpperCase()) || 'VITRINE';
+    const cyr = v('year') || String(new Date().getFullYear());
+    backCopyright.textContent =
+      `© & ™ ${cyr} THE ${B} COMPANY, INC. ALL RIGHTS RESERVED. ${B} IS A REGISTERED TRADEMARK OF THE ${B} COMPANY, INC. `
+      + `Major League Baseball trademarks and copyrights are used with permission of Major League Baseball. Visit MLB.com. `
+      + `OFFICIALLY LICENSED PRODUCT OF MLB. Officially Licensed Product of MLB Players, Inc. Visit MLBPLAYERS.COM, the Players Choice on the web. WWW.${dom}.COM`;
     backStats.innerHTML = statsHTML({
       showBatter: showBatter.checked, showPitcher: showPitcher.checked,
       batterStats: v('batterStats'), pitcherStats: v('pitcherStats'),
